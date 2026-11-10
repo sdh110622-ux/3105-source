@@ -13,16 +13,23 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Unzip Source
+      - name: Unzip Source & Clean
         run: |
-          # Tere zip ka exact naam, quotes ke sath taaki & ka error na aaye
+          # Zip extract kar rahe hain
           unzip "3.1_IOSEngine_Cheatbot_Bgmi&Pubgm.zip" -d MyExtractedSource
-          echo "Zip extracted successfully!"
+          
+          # Mac ka kachra delete kar rahe hain
+          cd MyExtractedSource
+          rm -rf __MACOSX
+          find . -name ".DS_Store" -type f -delete
+          cd ..
+          
+          echo "Extraction aur cleaning complete!"
 
       - name: Push to Repo
         run: |
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
           git add MyExtractedSource
-          git commit -m "Extracted source code from zip" || echo "Kuch naya nahi mila"
+          git commit -m "Extracted clean source code" || echo "Kuch naya nahi mila"
           git push
