@@ -1,4 +1,4 @@
-name: Extract Source to Repo
+name: Universal Extract
 
 on: [push, workflow_dispatch]
 
@@ -13,23 +13,32 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Unzip Source & Clean
+      - name: Extract and Clean
         run: |
-          # Zip extract kar rahe hain
-          unzip "3.1_IOSEngine_Cheatbot_Bgmi&Pubgm.zip" -d MyExtractedSource
+          # 1. Zip ka naam (Yahan tu apni zip ka naam badal sakta hai)
+          ZIP_FILE="3.1_IOSEngine_Cheatbot_Bgmi&Pubgm.zip"
           
-          # Mac ka kachra delete kar rahe hain
-          cd MyExtractedSource
-          rm -rf __MACOSX
-          find . -name ".DS_Store" -type f -delete
-          cd ..
+          # 2. Temporary folder mein extract karo
+          unzip -q "$ZIP_FILE" -d TempExtract
           
-          echo "Extraction aur cleaning complete!"
+          # 3. __MACOSX aur hidden files ko delete karo
+          rm -rf TempExtract/__MACOSX
+          find TempExtract -name ".DS_Store" -type f -delete
+          
+          # 4. Zip ke andar ki saari files ko repo ke main folder mein move kar do
+          # (Isse koi extra folder nahi banega)
+          cp -R TempExtract/* .
+          
+          # 5. Temporary folder delete kar do
+          rm -rf TempExtract
+          
+          echo "Source extracted perfectly without extra folders!"
 
       - name: Push to Repo
         run: |
           git config --global user.name "GitHub Action"
           git config --global user.email "action@github.com"
-          git add MyExtractedSource
-          git commit -m "Extracted clean source code" || echo "Kuch naya nahi mila"
+          git add .
+          # Agar files pehle se hain toh error na de, isliye || true lagaya hai
+          git commit -m "Auto-extracted clean source" || echo "No changes to commit"
           git push
