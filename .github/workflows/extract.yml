@@ -1,22 +1,28 @@
-name: Extract Source ZIP
+name: Extract Source to Repo
 
 on: [push, workflow_dispatch]
 
 jobs:
   extract:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Unzip Source
         run: |
-          unzip "3.1_IOSEngine_Cheatbot_Bgmi&Pubgm.zip" -d MyNewESP
-          echo "Extracted successfully!"
-          ls -la MyNewESP
+          # Tere zip ka exact naam, quotes ke sath taaki & ka error na aaye
+          unzip "3.1_IOSEngine_Cheatbot_Bgmi&Pubgm.zip" -d MyExtractedSource
+          echo "Zip extracted successfully!"
 
-      - name: Upload Extracted Source
-        uses: actions/upload-artifact@v4
-        with:
-          name: Extracted-Source-Zip
-          path: MyNewESP/
+      - name: Push to Repo
+        run: |
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git add MyExtractedSource
+          git commit -m "Extracted source code from zip" || echo "Kuch naya nahi mila"
+          git push
