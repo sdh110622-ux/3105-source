@@ -1,29 +1,62 @@
-name: Extract Source
+name: Build CheatbotEngine iOS
 
-on: [push, workflow_dispatch]
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
-  extract:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write 
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+  build:
+    runs-on: macos-14
 
-      - name: Unzip and Push
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Unzip source
         run: |
-          # 1. Zip extract karo current folder mein (bina koi naya folder banaye)
-          unzip -o "3.1_IOSEngine_Cheatbot_Bgmi&Pubgm.zip"
-          
-          # 2. Faltu Mac ka folder delete karo
-          rm -rf __MACOSX
-          
-          # 3. GitHub pe upload karo
-          git config --global user.name "GitHub Action"
-          git config --global user.email "action@github.com"
-          git add .
-          git commit -m "Source extracted successfully" || echo "No changes"
-          git push
+          unzip -q "3.1_IOSEngine_Cheatbot_Bgmi&Pubgm.zip" || true
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+      - name: Xcode version
+        run: xcodebuild -version
+
+      - name: Install xcpretty
+        run: gem install xcpretty --no-document 2>/dev/null || true
+
+      - name: Build framework
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -project Engine_Cheatbot/cheatbotowner.xcodeproj \
+            -scheme CheatBot_Owner \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination "generic/platform=iOS" \
+            IPHONEOS_DEPLOYMENT_TARGET=14.4 \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            ONLY_ACTIVE_ARCH=NO \
+            CLANG_CXX_LANGUAGE_STANDARD=c++17 \
+            BUILD_DIR="${GITHUB_WORKSPACE}/build" \
+            2>&1 | xcpretty || true
+
+      - name: Find built products
+        run: |
+          find "${GITHUB_WORKSPACE}/build" -name "*.framework" -o -name "*.dylib" 2>/dev/null || \
+          find ~/Library/Developer/Xcode/DerivedData -name "cheatbotowner.framework" 2>/dev/null | head -5
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cheatbotowner-framework
+          path: |
+            build/**/Release-iphoneos/
+            ~/Library/Developer/Xcode/DerivedData/**/Release-iphoneos/cheatbotowner.framework
+          if-no-files-found: warn
+          retention-days: 14
