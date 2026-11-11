@@ -17,7 +17,7 @@ jobs:
 
       - name: Unzip source
         run: |
-          unzip -q "3.1_IOSEngine_Cheatbot_Bgmi&Pubgm.zip" || true
+          unzip -q "Xd.zip" || true
 
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
