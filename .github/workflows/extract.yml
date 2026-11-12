@@ -12,35 +12,23 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Unzip Source and Locate Files
+      - name: Unzip Source
         run: |
           unzip -q xdopshit.zip -d extracted_source
           
-          # Ab hum build.sh ko dhoondh ke root mein layenge
-          # Kyunki zip ke andar kisi bhi folder mein ho, script use dhoondh legi
-          find extracted_source -name "build.sh" -exec cp {} . \;
-          find extracted_source -name "CMakeLists.txt" -exec cp {} . \;
+      - name: Make build script executable & Run
+        run: |
+          # Zip ke andar jo Engine_Cheatbot folder hai, usme jao
+          cd extracted_source/Engine_Cheatbot
           
-          # CMake ko path batana padega ki asli source kahan hai
-          # Agar zip ke andar Engine_Cheatbot folder hai, toh use current dir mein move kar do
-          if [ -d "extracted_source/Engine_Cheatbot" ]; then
-            cp -R extracted_source/Engine_Cheatbot .
-          elif [ -d "extracted_source/xdopshit/Engine_Cheatbot" ]; then
-            cp -R extracted_source/xdopshit/Engine_Cheatbot .
-          else
-            echo "Warning: Engine_Cheatbot folder direct nahi mila, structure check karo."
-            ls -la extracted_source
-          fi
-
-      - name: Make build script executable
-        run: chmod +x build.sh
-
-      - name: Run Build Script
-        run: ./build.sh
+          # Script ko run karo
+          chmod +x build.sh
+          ./build.sh
 
       - name: Upload Dylib
         uses: actions/upload-artifact@v4
         with:
           name: cheatbotowner-dylib
-          path: build/Release-iphoneos/cheatbotowner.dylib
+          # Dhyan do: build.sh ke andar jo output path likha hai, wo ab is folder ke andar banega
+          path: extracted_source/Engine_Cheatbot/build/Release-iphoneos/cheatbotowner.dylib
           if-no-files-found: error
