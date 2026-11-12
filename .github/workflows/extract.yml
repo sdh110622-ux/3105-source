@@ -6,15 +6,15 @@ on:
   workflow_dispatch:
 
 jobs:
-  check:
+  extract:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Unzip Source
+      - name: Unzip Source to Root
         run: |
-          unzip -q xdopshit.zip
+          unzip -q xdopshit.zip -d .
           
       - name: List Files
         run: |
