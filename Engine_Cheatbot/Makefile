@@ -1,4 +1,4 @@
-# Theos Makefile — Fast Compile
+# Theos Makefile — Fast Compile + No Signing Error
 
 DEBUG = 0
 FINALPACKAGE = 1
@@ -14,7 +14,6 @@ TWEAK_NAME = cheatbotowner
 
 cheatbotowner_FILES = $(shell find CheatbotEngine -name '*.cpp' -o -name '*.mm' -o -name '*.m')
 
-# -O3 add kiya hai taaki code fast compile aur run ho
 cheatbotowner_CFLAGS = -fobjc-arc -w -Wno-error -std=c++17 -O3 \
                        -ICheatbotEngine \
                        -ICheatbotEngine/SDK \
@@ -27,8 +26,11 @@ cheatbotowner_LDFLAGS = -F. -framework JRMemory
 
 cheatbotowner_STRIP = 1
 
+# Signing ko disable kar diya taaki ldid ka error na aaye
+TARGET_CODESIGN = 
+
 include $(THEOS_MAKE_PATH)/tweak.mk
 
-# Parallel Compile: Jitne CPU cores hain, utne threads pe compile karega
+# Parallel compile
 after-all::
 	@$(MAKE) -j$(shell sysctl -n hw.ncpu) -C $(THEOS_OBJ_DIR)
