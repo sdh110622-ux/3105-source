@@ -11,6 +11,7 @@
 #include "imgui.h"
 #include "imgui_impl_metal.h"
 #import <sys/socket.h>
+#undef PF_MAX
 #import <Foundation/Foundation.h>
 #import <mach/mach_traps.h>
 #include <math.h>
@@ -2425,41 +2426,37 @@ void *hookCheatbot(UGameViewportClient * GmaeViewPort, SDK::UCanvas* pCanvas){
     pCanvas->SizeY = g_screenHeight;
     
     return oriCheatbot(GmaeViewPort, pCanvas);
+}
 
-    
-};
-void  *botcheatxd(){
+void *botcheatxd(){
     if((Cheatbotlp)){
-        static bool botxdxd =false;
+        static bool botxdxd = false;
         if(!botxdxd){
-            auto CheatBotObj =(FUObjectArray *) (CHEATBOTOWNER());
+            auto CheatBotObj = (SDK::FUObjectArray *) (CHEATBOTOWNER());
             
             auto gobjects = CheatBotObj->ObjObjects;
             
-            
-            for (int i=0;i< gobjects.Num(); i++)
+            for (int i = 0; i < gobjects.Num(); i++)
                 if (auto obj = gobjects.GetByIndex(i)) {
                     
-                    if(obj->IsA(UGameViewportClient::StaticClass())) {
-                        auto View = (UGameViewportClient *) obj;
+                    if(obj->IsA(SDK::UGameViewportClient::StaticClass())) {
+                        auto View = (SDK::UGameViewportClient *) obj;
                         
-                        
-                        auto CheatBotTele =View->VTable;
+                        auto CheatBotTele = View->VTable;
                         auto vTable = (void**)(CheatBotTele);
-                        if (vTable && ( vTable[134] != hookCheatbot)) {
+                        
+                        if (vTable && (vTable[134] != hookCheatbot)) {
                             oriCheatbot = decltype(oriCheatbot)(vTable[134]);
-                            vTable[134] = (void *) hookSDK;
-                            
-                        };
+                            vTable[134] = (void *) hookCheatbot;
+                        }
                     }
                 }
-            botxdxd =true;
+            botxdxd = true;
         }
-        
     }
     return 0;
-    }
-#define hook botcheatxd
+}
+#define hook botxdxd
 
 
 
