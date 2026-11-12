@@ -12,7 +12,6 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Cache Theos taaki baar-baar download na karna pade
       - name: Cache Theos
         uses: actions/cache@v3
         with:
@@ -21,12 +20,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-theos-
 
-      - name: Setup Theos
+      - name: Setup Theos and Ldid
         run: |
           export THEOS=$HOME/theos
           if [ ! -d "$THEOS" ]; then
             git clone --recursive https://github.com/theos/theos.git $THEOS
           fi
+          brew install ldid
           echo "THEOS=$THEOS" >> $GITHUB_ENV
 
       - name: Build Dylib
