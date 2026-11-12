@@ -12,12 +12,25 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Unzip Source
+      - name: Unzip Source and Locate Files
         run: |
-          echo "Extracting xdopshit.zip..."
-          unzip xdopshit.zip
-          echo "Extraction complete. Current directory contents:"
-          ls -la
+          unzip -q xdopshit.zip -d extracted_source
+          
+          # Ab hum build.sh ko dhoondh ke root mein layenge
+          # Kyunki zip ke andar kisi bhi folder mein ho, script use dhoondh legi
+          find extracted_source -name "build.sh" -exec cp {} . \;
+          find extracted_source -name "CMakeLists.txt" -exec cp {} . \;
+          
+          # CMake ko path batana padega ki asli source kahan hai
+          # Agar zip ke andar Engine_Cheatbot folder hai, toh use current dir mein move kar do
+          if [ -d "extracted_source/Engine_Cheatbot" ]; then
+            cp -R extracted_source/Engine_Cheatbot .
+          elif [ -d "extracted_source/xdopshit/Engine_Cheatbot" ]; then
+            cp -R extracted_source/xdopshit/Engine_Cheatbot .
+          else
+            echo "Warning: Engine_Cheatbot folder direct nahi mila, structure check karo."
+            ls -la extracted_source
+          fi
 
       - name: Make build script executable
         run: chmod +x build.sh
