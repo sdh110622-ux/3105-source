@@ -1,4 +1,4 @@
-# Theos Makefile — Fast Compile + No Signing Error
+# Universal Makefile — Jailbreak (Deb) + Sideloadly (Dylib)
 
 DEBUG = 0
 FINALPACKAGE = 1
@@ -14,6 +14,7 @@ TWEAK_NAME = cheatbotowner
 
 cheatbotowner_FILES = $(shell find CheatbotEngine -name '*.cpp' -o -name '*.mm' -o -name '*.m')
 
+# Optimization + Warnings ignore
 cheatbotowner_CFLAGS = -fobjc-arc -w -Wno-error -std=c++17 -O3 \
                        -ICheatbotEngine \
                        -ICheatbotEngine/SDK \
@@ -21,16 +22,13 @@ cheatbotowner_CFLAGS = -fobjc-arc -w -Wno-error -std=c++17 -O3 \
                        -ICheatbotEngine/imgui/Metal
 
 cheatbotowner_FRAMEWORKS = UIKit Foundation Metal MetalKit QuartzCore AVFoundation CoreFoundation WebKit SystemConfiguration AdSupport IOKit Security MediaPlayer Accelerate
+
 cheatbotowner_LIBRARIES = c++
 cheatbotowner_LDFLAGS = -F. -framework JRMemory
-
 cheatbotowner_STRIP = 1
-
-# Signing ko disable kar diya taaki ldid ka error na aaye
-TARGET_CODESIGN = 
 
 include $(THEOS_MAKE_PATH)/tweak.mk
 
-# Parallel compile
+# Parallel compile (Jitne CPU cores, utne threads)
 after-all::
 	@$(MAKE) -j$(shell sysctl -n hw.ncpu) -C $(THEOS_OBJ_DIR)
