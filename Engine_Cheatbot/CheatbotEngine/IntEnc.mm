@@ -74,6 +74,7 @@ bool IsAimbot = false;
 bool IsBone =false;
 bool Is3Dbox =false;
 bool qwcifqvs86y8fify = false;
+bool MenDeal = false;
 
 static bool isclean = false;
 static bool isplay = true;
@@ -1838,7 +1839,7 @@ void RenderESP(UGameViewportClient * GmaeViewPort, SDK::UCanvas* Canvas) {
             return;
         {
             
-            std::wstring wstr =XorEnc(L"");
+            std::wstring wstr =XorEnc(L"Testing");
             Font->LegacyFontSize = 30;
             DrawTextNotCentered(Canvas,FString(wstr), {static_cast<float>(screenWidth/2), 100}, FLinearColor(1.f, 1.f, 1.f, 1.f),COLOR_BLACK);
             
