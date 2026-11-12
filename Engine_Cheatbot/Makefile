@@ -28,7 +28,3 @@ cheatbotowner_LDFLAGS = -F. -framework JRMemory
 cheatbotowner_STRIP = 1
 
 include $(THEOS_MAKE_PATH)/tweak.mk
-
-# Parallel compile (Jitne CPU cores, utne threads)
-after-all::
-	@$(MAKE) -j$(shell sysctl -n hw.ncpu) -C $(THEOS_OBJ_DIR)
