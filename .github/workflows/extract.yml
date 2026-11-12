@@ -1,62 +1,33 @@
-name: Build CheatbotEngine iOS
+name: Build Dylib
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
     branches: [ main ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: macos-latest
-
     steps:
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Unzip source
+      - name: Unzip Source
         run: |
-          unzip -q "xdopshit.zip" || true
+          echo "Extracting xdopshit.zip..."
+          unzip xdopshit.zip
+          echo "Extraction complete. Current directory contents:"
+          ls -la
 
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+      - name: Make build script executable
+        run: chmod +x build.sh
 
-      - name: Xcode version
-        run: xcodebuild -version
+      - name: Run Build Script
+        run: ./build.sh
 
-      - name: Install xcpretty
-        run: gem install xcpretty --no-document 2>/dev/null || true
-
-      - name: Build framework
-        run: |
-          set -o pipefail
-          xcodebuild \
-            -project Engine_Cheatbot/cheatbotowner.xcodeproj \
-            -scheme CheatBot_Owner \
-            -configuration Release \
-            -sdk iphoneos \
-            -destination "generic/platform=iOS" \
-            IPHONEOS_DEPLOYMENT_TARGET=14.4 \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            ONLY_ACTIVE_ARCH=NO \
-            CLANG_CXX_LANGUAGE_STANDARD=c++17 \
-            BUILD_DIR="${GITHUB_WORKSPACE}/build" \
-            2>&1 | xcpretty || true
-
-      - name: Find built products
-        run: |
-          find "${GITHUB_WORKSPACE}/build" -name "*.framework" -o -name "*.dylib" 2>/dev/null || \
-          find ~/Library/Developer/Xcode/DerivedData -name "cheatbotowner.framework" 2>/dev/null | head -5
-
-      - name: Upload artifact
+      - name: Upload Dylib
         uses: actions/upload-artifact@v4
         with:
-          name: cheatbotowner-framework
-          path: |
-            build/**/Release-iphoneos/
-            ~/Library/Developer/Xcode/DerivedData/**/Release-iphoneos/cheatbotowner.framework
-          if-no-files-found: warn
-          retention-days: 14
+          name: cheatbotowner-dylib
+          path: build/Release-iphoneos/cheatbotowner.dylib
+          if-no-files-found: error
