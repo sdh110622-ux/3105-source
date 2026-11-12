@@ -1,32 +1,26 @@
-name: Unzip to Repo
+name: Build Dylib
 
 on:
+  push:
+    branches: [ main ]
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
-  extract:
-    runs-on: ubuntu-latest
+  build:
+    runs-on: macos-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Unzip Source
+      - name: Make build script executable & Run
         run: |
-          echo "Unzipping..."
-          unzip -q xdopshit.zip -d .
-          echo "Removing unnecessary files..."
-          rm -rf __MACOSX
-          rm xdopshit.zip
-          
-      - name: Commit and Push Extracted Files
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add .
-          git commit -m "Extracted source files from zip and cleaned up"
-          git push
+          cd Engine_Cheatbot
+          chmod +x build.sh
+          ./build.sh
+
+      - name: Upload Dylib
+        uses: actions/upload-artifact@v4
+        with:
+          name: cheatbotowner-dylib
+          path: Engine_Cheatbot/build/Release-iphoneos/cheatbotowner.dylib
+          if-no-files-found: error
