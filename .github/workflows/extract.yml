@@ -1,4 +1,4 @@
-name: Build Dylib
+name: Unzip Check
 
 on:
   push:
@@ -6,29 +6,24 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: macos-latest
+  check:
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Unzip Source
         run: |
-          unzip -q xdopshit.zip -d extracted_source
+          unzip -q xdopshit.zip
           
-      - name: Make build script executable & Run
+      - name: List Files
         run: |
-          # Zip ke andar jo Engine_Cheatbot folder hai, usme jao
-          cd extracted_source/Engine_Cheatbot
+          echo "=== ROOT FOLDER CONTENTS ==="
+          ls -la
           
-          # Script ko run karo
-          chmod +x build.sh
-          ./build.sh
-
-      - name: Upload Dylib
-        uses: actions/upload-artifact@v4
-        with:
-          name: cheatbotowner-dylib
-          # Dhyan do: build.sh ke andar jo output path likha hai, wo ab is folder ke andar banega
-          path: extracted_source/Engine_Cheatbot/build/Release-iphoneos/cheatbotowner.dylib
-          if-no-files-found: error
+          echo "=== ENGINE_CHEATBOT FOLDER CONTENTS ==="
+          if [ -d "Engine_Cheatbot" ]; then
+            ls -la Engine_Cheatbot
+          else
+            echo "Engine_Cheatbot folder root mein nahi hai!"
+          fi
