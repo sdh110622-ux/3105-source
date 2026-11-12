@@ -138,7 +138,6 @@ bool MagicCar;
 
 NSString *resultx;
 @implementation metalbiew
-bool MenDeal;
 
 
 
@@ -401,8 +400,12 @@ namespace Variables {
 - (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
 {
     [self updateIOWithTouchEvent:event];
+    
+    // 3 Finger Tap se Menu Open/Close
+    if (event.allTouches.count >= 1) {
+        MenDeal = !MenDeal;
+    }
 }
-
 - (void)touchesMoved:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event
 {
     [self updateIOWithTouchEvent:event];
