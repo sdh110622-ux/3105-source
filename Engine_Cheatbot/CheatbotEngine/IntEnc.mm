@@ -55,7 +55,7 @@
 
 #import "XorStr.hpp"
 
-using namespace CHEATBOT;
+using namespace SDK;
 #define kWidth  [UIScreen mainScreen].bounds.size.width
 #define kHeight [UIScreen mainScreen].bounds.size.height
 
@@ -269,7 +269,7 @@ namespace Variables {
         {
             
                ImGui::Begin([NSSENCRYPT("iCheatBot Engine X") UTF8String] , &MenDeal, ImGuiWindowFlags_NoCollapse);
-               if (ImGui::BeginTabBar("选项卡", ImGuiTabBarFlags_NoTooltip))
+               if (ImGui::BeginTabBar("éé¡¹å¡", ImGuiTabBarFlags_NoTooltip))
                    
                {
                  if (ImGui::BeginTabItem("Menu"))
@@ -321,7 +321,7 @@ namespace Variables {
                        
                        
                        ImGui::Separator();
-                       ImGui::EndTabItem();//结束
+                       ImGui::EndTabItem();//ç»æ
                    }
                    
                    
@@ -333,7 +333,7 @@ namespace Variables {
                    
                
                            
-                           ImGui::EndTabBar();//结束
+                           ImGui::EndTabBar();//ç»æ
                            
                    }
                ImGui::End();
@@ -453,7 +453,7 @@ bool IsSCope = false;
 bool IsBothaim =false;
 bool IsAny=true;
 
-using namespace CHEATBOT;
+using namespace SDK;
 bool HIDEESP = false;
 
 bool IsAimbotNew = false;
@@ -945,7 +945,7 @@ return false;
 }
 struct FLinearColor visCol;
 ASTExtraPlayerCharacter *g_LocalPlayer;
-CHEATBOT::ASTExtraPlayerController *g_PlayerController;
+SDK::ASTExtraPlayerController *g_PlayerController;
 #define COLOR_BLACK FLinearColor(0, 0, 0, 1.f)
 #define COLOR_WHITE FLinearColor(1.f, 1.f, 1.f, 1.f)
 #define COLOR_RED   FLinearColor(1.f, 0, 0, 1.f)
@@ -1695,46 +1695,46 @@ return (s1 == s2);
 }
 FString getplayerflag(FString nation) {
 if (isEqual(nation, "G1") ) {
-return "🏁";
+return "ð";
 }
 if (isEqual(nation, "IQ") ) {
-return "🇮🇶";
+return "ð®ð¶";
 }
 if (isEqual(nation, "SA") ) {
-return "🇸🇦";
+return "ð¸ð¦";
 }
 if (isEqual(nation, "BH") ) {
-return "🇧🇭";
+return "ð§ð­";
 }
 if (isEqual(nation, "SY") ) {
-return "🇸🇾";
+return "ð¸ð¾";
 }
 if (isEqual(nation, "CA") ) {
-return "🇨🇦";
+return "ð¨ð¦";
 }
 if (isEqual(nation, "PK") ) {
-return "🇵🇰";
+return "ðµð°";
 }
 if (isEqual(nation, "AF") ) {
-return "🇦🇫";
+return "ð¦ð«";
 }
 if (isEqual(nation, "AL") ) {
-return "🇦🇱";
+return "ð¦ð±";
 }
 if (isEqual(nation, "DZ") ) {
-return "🇩🇿";
+return "ð©ð¿";
 }
 if (isEqual(nation, "AS") ) {
-return "🇦🇸";
+return "ð¦ð¸";
 }
 if (isEqual(nation, "AD") ) {
-return "🇦🇩";
+return "ð¦ð©";
 }
 if (isEqual(nation, "AO") ) {
-return "🇦🇴";
+return "ð¦ð´";
 }
 if (isEqual(nation, "AI") ) {
-return "🇦🇮";
+return "ð¦ð®";
 }
 return "";}
 ASTExtraVehicleBase *GetTargetVehicle() {
@@ -1804,7 +1804,7 @@ float Cheatbotx(float cheatbot1, float cheatbot2) {
 
 
 
-void RenderESP(UGameViewportClient * GmaeViewPort, CHEATBOT::UCanvas* Canvas) {
+void RenderESP(UGameViewportClient * GmaeViewPort, SDK::UCanvas* Canvas) {
     ASTExtraPlayerCharacter *localPlayer = 0;
     ASTExtraPlayerController *localPlayerController = 0;
     
@@ -2418,8 +2418,8 @@ instance = [[self alloc] init];
 return instance;
 }
 
-void *(*oriCheatbot)(UGameViewportClient * GmaeViewPort, CHEATBOT::UCanvas* pCanvas);
-void *hookCheatbot(UGameViewportClient * GmaeViewPort, CHEATBOT::UCanvas* pCanvas){
+void *(*oriCheatbot)(UGameViewportClient * GmaeViewPort, SDK::UCanvas* pCanvas);
+void *hookCheatbot(UGameViewportClient * GmaeViewPort, SDK::UCanvas* pCanvas){
     RenderESP(GmaeViewPort, pCanvas);
     pCanvas->SizeX = g_screenWidth;
     pCanvas->SizeY = g_screenHeight;
@@ -2448,7 +2448,7 @@ void  *botcheatxd(){
                         auto vTable = (void**)(CheatBotTele);
                         if (vTable && ( vTable[134] != hookCheatbot)) {
                             oriCheatbot = decltype(oriCheatbot)(vTable[134]);
-                            vTable[134] = (void *) hookCheatbot;
+                            vTable[134] = (void *) hookSDK;
                             
                         };
                     }
@@ -3174,4 +3174,3 @@ void LoadItemData()
 
 
 @end
-
