@@ -1,8 +1,6 @@
-name: Unzip Check
+name: Unzip to Repo
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
@@ -12,18 +10,15 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Unzip Source to Root
+      - name: Unzip Source
         run: |
           unzip -q xdopshit.zip -d .
+          rm xdopshit.zip
           
-      - name: List Files
+      - name: Commit and Push Extracted Files
         run: |
-          echo "=== ROOT FOLDER CONTENTS ==="
-          ls -la
-          
-          echo "=== ENGINE_CHEATBOT FOLDER CONTENTS ==="
-          if [ -d "Engine_Cheatbot" ]; then
-            ls -la Engine_Cheatbot
-          else
-            echo "Engine_Cheatbot folder root mein nahi hai!"
-          fi
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Extracted xdopshit.zip source files"
+          git push
