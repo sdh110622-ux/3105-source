@@ -1,4 +1,4 @@
-name: Build Dylib
+name: Build Theos Tweak
 
 on:
   push:
@@ -12,15 +12,21 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Make build script executable & Run
+      - name: Setup Theos
+        run: |
+          export THEOS=$HOME/theos
+          git clone --recursive https://github.com/theos/theos.git $THEOS
+          echo "THEOS=$THEOS" >> $GITHUB_ENV
+
+      - name: Build Tweak
         run: |
           cd Engine_Cheatbot
-          chmod +x build.sh
-          ./build.sh
+          make package
 
-      - name: Upload Dylib
+      - name: Find and Upload Deb
         uses: actions/upload-artifact@v4
         with:
-          name: cheatbotowner-dylib
-          path: Engine_Cheatbot/build/Release-iphoneos/cheatbotowner.dylib
+          name: cheatbot-deb
+          # Theos packages usually go to packages/ folder
+          path: Engine_Cheatbot/packages/*.deb
           if-no-files-found: error
