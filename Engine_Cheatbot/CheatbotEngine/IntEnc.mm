@@ -1808,602 +1808,123 @@ float Cheatbotx(float cheatbot1, float cheatbot2) {
 
 
 
-
-void RenderESP(UGameViewportClient * GmaeViewPort, SDK::UCanvas* Canvas) {
-    ASTExtraPlayerCharacter *localPlayer = 0;
-    ASTExtraPlayerController *localPlayerController = 0;
+void LocalPlayer(UCanvas* Canvas) {
+    ASTExtraPlayerCharacter* localPlayer = nullptr;
+    ASTExtraPlayerController* localPlayerController = nullptr;
     
-    auto screenWidth = Canvas->SizeX;
+    if (!Canvas) return;
+    auto GWorld = GetWorld();
+    if (GWorld && GWorld->NetDriver && GWorld->NetDriver->ServerConnection) {
+        localPlayerController = reinterpret_cast<ASTExtraPlayerController*>(GWorld->NetDriver->ServerConnection->PlayerController);
+        if (localPlayerController && GWorld->PersistentLevel) {
+            auto PlayerActors = GetActors(GWorld->PersistentLevel);
+            for (int i = 0; i < PlayerActors.Num(); ++i) {
+                AActor* Actor = PlayerActors[i];
+                if (!Actor) continue;
+                if (Actor->IsA(ASTExtraPlayerCharacter::StaticClass())) {
+                    auto Player = reinterpret_cast<ASTExtraPlayerCharacter*>(Actor);
+                    if (Player && Player->PlayerKey == localPlayerController->PlayerKey) {
+                        localPlayer = Player;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    g_LocalPlayer = localPlayer;
+    g_LocalController = localPlayerController;
+}
+void DrawPlayerESP(UCanvas* Canvas) {
+    int totalEnemies = 0, totalBots = 0;
+    
+    if (g_LocalPlayer && g_LocalController && g_LocalPlayer->PartHitComponent && Canvas) { 
+        if (g_LocalPlayer->PartHitComponent) {
+            auto ConfigCollisionDistSqAngles = g_LocalPlayer->PartHitComponent->ConfigCollisionDistSqAngles;
+            for (int j = 0; j < ConfigCollisionDistSqAngles.Num(); j++) {
+                ConfigCollisionDistSqAngles[j].Angle = 60.0f;
+            }
+            g_LocalPlayer->PartHitComponent->ConfigCollisionDistSqAngles = ConfigCollisionDistSqAngles;
+        }
+        
+        static FName HeadBone = FName("Head");
+        static FName RootBone = FName("Root");
+        auto GWorld = GetWorld();
+        
+        if (GWorld && GWorld->PersistentLevel) { 
+            auto Actors = GetActors(GWorld->PersistentLevel);
+            for (int i = 0; i < Actors.Num(); ++i) { 
+                auto Actor = Actors[i];
+                if (!Actor) continue;
+                
+                if (Actor->IsA(ASTExtraPlayerCharacter::StaticClass())) { 
+                    auto* Player = static_cast<ASTExtraPlayerCharacter*>(Actor);
+                    if (!Player || Player->PlayerKey == g_LocalController->PlayerKey || Player->TeamID == g_LocalController->TeamID || Player->bDead || Player->bHidden)
+                        continue;
+                        
+                    float Distance = g_LocalPlayer->GetDistanceTo(Player) / 100.f;
+                    if (Distance > 500.f) continue;
+                    if (Player->bEnsure) ++totalBots;
+                    else ++totalEnemies;
+
+                    FVector HeadPos = Player->GetBonePos(HeadBone, {0, 0, 0});
+                    FVector RootPos = Player->GetBonePos(RootBone, {0, 0, 0});
+                    FVector2D Head2D, Root2D;
+                    if (!W2S(HeadPos, &Head2D) || !W2S(RootPos, &Root2D)) continue;
+                    
+                    bool IsVisible = g_LocalController->LineOfSightTo(Player, {0, 0, 0}, true); 
+                    FLinearColor color = Player->bEnsure ? (IsVisible ? FLinearColor(0.f, 1.f, 1.f, 1.f) : FLinearColor(1.f, 0.f, 0.f, 1.f)) : (IsVisible ? FLinearColor(0.f, 1.f, 1.f, 1.f) : FLinearColor(1.f, 0.f, 0.f, 1.f));
+                    if (Head2D.X < 0 || Head2D.Y < 0 || Head2D.X > glWidth || Head2D.Y > glHeight)
+                        continue;
+                    
+                    // ð Draw Player Line
+                   if (Cheat::Esp::Line) {
+                        FVector2D Start(glWidth / 2.f, 0.f);
+                        FVector2D End(Head2D.X, Head2D.Y/* - 16.f*/);
+                        DrawLine(Canvas, Start, End, 0.8f, color); // Thickness updated to 1.8f for cleanness
+                   }
+                }}}}}
+
+void DrawMSG(UCanvas* Canvas) {
+    if (!Canvas || !Font) return;
+	   
+	auto screenWidth = Canvas->SizeX;
     auto screenHeight = Canvas->SizeY;
     
     g_screenWidth = screenWidth;
     g_screenHeight = screenHeight;
-   
-    
-    FVector LocalPos{0, 0, 0}, ViewPos{0, 0, 0};
-    
-    if (localPlayer) {
-        LocalPos = GetBoneLocationByName(localPlayer, "Root");
-        ViewPos = GetBoneLocationByName(localPlayer, "Head");
-        ViewPos.Z += 15.f;
-    }
-    
-    
-    g_screenWidth = screenWidth;
-    g_screenHeight = screenHeight;
-    if (Canvas) {
-        static bool loadFont = false;
-        if (!loadFont) {
-            LoadFont();
-            loadFont = true;
-        }
-        
-        if (!Font || !Font )
-            return;
-        {
-            
-            std::wstring wstr =XorEnc(L"Testing");
-            Font->LegacyFontSize = 30;
-            DrawTextNotCentered(Canvas,FString(wstr), {static_cast<float>(screenWidth/2), 100}, FLinearColor(1.f, 1.f, 1.f, 1.f),COLOR_BLACK);
-            
-            Font->LegacyFontSize = 30;
-            
-        }
-        UGameplayStatics* gGameplayStatics = (UGameplayStatics*)UGameplayStatics::StaticClass();
-#define W2S(w, s) gGameplayStatics->ProjectWorldToScreen(localPlayerController, w, true, s)
-        UKismetMathLibrary* UMC = (UKismetMathLibrary*)UKismetMathLibrary::StaticClass();
-        UKismetSystemLibrary*USl = (UKismetSystemLibrary*)UKismetSystemLibrary::StaticClass();
-        auto GWorld = GetFullWorld();
-        if (GWorld) {
-            UNetDriver *NetDriver = GWorld->NetDriver;
-            if (NetDriver) {
-                UNetConnection *ServerConnection = NetDriver->ServerConnection;
-                if (ServerConnection) {
-                    localPlayerController = (ASTExtraPlayerController *) ServerConnection->PlayerController;
-                }
-            }
-            
-            
-            if (localPlayerController) {
-                std::vector<ASTExtraPlayerCharacter*> PlayerCharacter;
-                GetAllActors(PlayerCharacter);
-                for (auto actor = PlayerCharacter.begin(); actor != PlayerCharacter.end(); actor++) {
-                    auto Actor = *actor;
-                    
-                    if (Actor->PlayerKey == ((ASTExtraPlayerController *) localPlayerController)->PlayerKey) {
-                        localPlayer = Actor;
-                        break;
-                    }
-                }
-                localPlayerController->AntiCheatManagerComp = 0;
-                auto CheatManger = localPlayerController->CheatManager;
-                if(CheatManger){
-                    CheatManger->FlushLog();
-                }
-                {
-                    if (localPlayer) {
-                        
-                       
-                        float Distance =0;
-                        
-                        int totalEnemies = 0;
-                        std::vector<ASTExtraPlayerCharacter*> PlayerCharacter2;
-                        GetAllActors(PlayerCharacter2);
-                        
-                        
-                        
-                        for (auto actor = PlayerCharacter2.begin(); actor != PlayerCharacter2.end(); actor++) {
-                            auto Player = *actor;
-                            
-                            if (Player->PlayerKey == localPlayer->PlayerKey)
-                                continue;
-                            
-                            if (Player->TeamID == localPlayer->TeamID)
-                                continue;
-                            
-                            if (Player->bDead)
-                                continue;
-                            
-                            if (Player->bHidden )
-                                continue;
-                            
-                            if (!Player->Mesh)
-                                continue;
-                            
-                            if (!Player->RootComponent)
-                                continue;
-                            
-                            
-                            if (Player->bEnsure)
-                                totalEnemies++;
-                            else totalEnemies++;
-                            
-                            FVector   Head = GetBoneLocationByName(Player, "Head");
-                            Head.Z += 12.5f;
-                            
-                            FVector Root = GetBoneLocationByName(Player, "Root");
-                            headp = GetBoneLocationByName(Player, "Head");
-                            
-                            Distance = Player->GetDistanceTo(localPlayer) / 100.f;
-                            
-                            if (Distance < 500.f) {
-                                bool IsVisible = localPlayerController->LineOfSightTo(Player, {0,0,0}, true);
-                                if(IsVisible) {
-                                    visCol.R = 0.f;
-                                    visCol.G = 1.f;
-                                    visCol.B = 0.f;
-                                    visCol.A = 1.f;
-                                }else {
-                                    visCol.R = 1.f;
-                                    visCol.G = 0.f;
-                                    visCol.B = 0.f;
-                                    visCol.A = 1.f;
-                                }
-                                FVector2D HeadSc, RootSc;
-                                if(isLineEsp){
-                                    if (gGameplayStatics->ProjectWorldToScreen(localPlayerController, Head, false, &HeadSc)) {
-                                        if (IsVisible){
-                                            DrawLine(Canvas, {static_cast<float>(screenWidth / 2), 0}, HeadSc, 1.5f, visCol);
-                                        }  else{
-                                            DrawLine(Canvas, {static_cast<float>(screenWidth / 2), 0}, HeadSc, 1.5f, visCol);
-                                            
-                                            
-                                        }
-                                        
-                                    }
-                                }
-                                
-                                
-                                
-                                
-                                if(IsBone)
-                                {
-                                    // ESP SKELETON
-                                    static vector<string> right_arm{"neck_01", "clavicle_r", "upperarm_r", "lowerarm_r", "hand_r", "item_r"};
-                                    static vector<string> left_arm{"neck_01", "clavicle_l", "upperarm_l", "lowerarm_l", "hand_l", "item_l"};
-                                    static vector<string> spine{"Head", "neck_01", "spine_03", "spine_02", "spine_01", "Pelvis"};
-                                    static vector<string> lower_right{"Pelvis", "thigh_r", "calf_r", "foot_r"};
-                                    static vector<string> lower_left{"Pelvis", "thigh_l", "calf_l", "foot_l"};
-                                    static vector<vector<string>> skeleton{right_arm, left_arm, spine, lower_right, lower_left};
-                                    bool IsVisible = localPlayerController->LineOfSightTo(Player, { 0, 0, 0 }, true);
-                                    FLinearColor visCol(1.f, 1.f, 1.f, 1.f);
-                                    if(IsVisible) {
-                                        visCol.R = 0.f;
-                                        visCol.G = 1.f;
-                                        visCol.B = 0.f;
-                                        visCol.A = 1.f;
-                                    }else {
-                                        visCol.R = 1.f;
-                                        visCol.G = 0.f;
-                                        visCol.B = 0.f;
-                                        visCol.A = 1.f;
-                                    }
-                                    
-                                    if(Player->bEnsure){
-                                        
-                                        if(IsVisible) {
-                                            
-                                            visCol.R = 1.f;
-                                            visCol.G = 1.f;
-                                            visCol.B = 1.f;
-                                            visCol.A = 1.f;
-                                            
-                                        }else {
-                                            
-                                            visCol.R = 0.33f;
-                                            visCol.G = 0.38f;
-                                            visCol.B = 0.44f;
-                                            visCol.A = 1.00f;
-                                            
-                                            
-                                        }
-                                        
-                                    }
-                                    if (Player->Health == 0){
-                                        if(IsVisible) {
-                                            
-                                            visCol.R = 0.98f;
-                                            visCol.G = 0.83f;
-                                            visCol.B = 0.14f;
-                                            visCol.A = 1.00f;
-                                        }else{
-                                            
-                                            visCol.R = 0.83f;
-                                            visCol.G = 0.51f;
-                                            visCol.B = 0.07f;
-                                            visCol.A = 1.00f;
-                                        }
-                                        
-                                        
-                                        
-                                    }
-                                    
-                                    
-                                    
-                                    
-                                    
-                                    if (Player->IsInvincible)
-                                    {
-                                        visCol.R = 1.f;
-                                        visCol.G = 1.f;
-                                        visCol.B = 0.f;
-                                        visCol.A = 1.f;
-                                    }
-                                    
-                                    
-                                    
-                                    
-                                    
-                                    
-                                    for (auto &boneStructure : skeleton) {
-                                        string lastBone;
-                                        for (string &currentBone : boneStructure) {
-                                            if (!lastBone.empty()) {
-                                                FVector wBoneFrom = GetBoneLocationByName(Player, lastBone.c_str());
-                                                FVector wBoneTo = GetBoneLocationByName(Player, currentBone.c_str());
-                                                FVector2D boneFrom, boneTo;
-                                                if (gGameplayStatics->ProjectWorldToScreen(localPlayerController, wBoneFrom, false, &boneFrom) && gGameplayStatics->ProjectWorldToScreen(localPlayerController, wBoneTo, false, &boneTo)) {
-                                                    if (IsVisible)
-                                                        Canvas->K2_DrawLine(boneFrom, boneTo, 2.5f, visCol);
-                                                    else
-                                                        Canvas->K2_DrawLine(boneFrom, boneTo, 2.5f, visCol);
-                                                    
-                                                }
-                                            }
-                                            lastBone = currentBone;
-                                        }
-                                    }
-                                }
-                                
-                                
-   
-                               
-                                
-                                
-                                   
-                                
-                        
-                            }
-                            
-                            
-                           
-                            /*+++++++++++++++++++++++++++++++++++++++WEAPON PLAYER ESP+++++++++++++++++++++++++*/
-                          
-                          
-                            if(!localPlayer->IsUsingGrenade()) {
-                                
-                                auto WeaponManagerComponent = localPlayer->WeaponManagerComponent;
-                                if (WeaponManagerComponent) {
-                                    auto propSlot = WeaponManagerComponent->GetCurrentUsingPropSlot();
-                                    if ((int) propSlot.GetValue() >= 1 &&
-                                        (int) propSlot.GetValue() <= 3) {
-                                        auto CurrentWeaponReplicated = (ASTExtraShootWeapon *) WeaponManagerComponent->CurrentWeaponReplicated;
-                                        if (CurrentWeaponReplicated) {
-                                            auto ShootWeaponEntityComp = CurrentWeaponReplicated->ShootWeaponEntityComp;
-                                            auto ShootWeaponEffectComp = CurrentWeaponReplicated->ShootWeaponEffectComp;
-                                            auto ID = CurrentWeaponReplicated->GetWeaponID();
-                                            if(ID != 108004 && ID != 108003 && ID != 108002 && ID != 108001 && ID != 108000 && ID != 108005 && ID != 108006 && ID != 108007)
-                                                
-                                                if (ShootWeaponEntityComp && ShootWeaponEffectComp){
-                                                    if(IsCrossHair){
-                                                        memset(&ShootWeaponEntityComp->DeviationInfo, 0, sizeof(FSDeviation));
-                                                        
-                                                        ShootWeaponEntityComp->ShotGunCenterPerc = 0.0f;
-                                                        ShootWeaponEntityComp->ShotGunVerticalSpread = 0.0f;
-                                                        ShootWeaponEntityComp->ShotGunHorizontalSpread = 0.0f;
-                                                        
-                                                        ShootWeaponEntityComp->GameDeviationFactor = 0.0f;
-                                                        ShootWeaponEntityComp->GameDeviationAccuracy = 0.0f;
-                                                        
-                                                        ShootWeaponEntityComp->CrossHairInitialSize = 0.0f;
-                                                        ShootWeaponEntityComp->CrossHairBurstSpeed = 0.0f;
-                                                        ShootWeaponEntityComp->CrossHairBurstIncreaseSpeed = 0.0f;
-                                                        ShootWeaponEntityComp->VehicleWeaponDeviationAngle = 0.0f;
-                                                    }
-                                                    if(IsHitXPL){
-                                                        
-                                                        ShootWeaponEntityComp->ExtraHitPerformScale = 100;
-                                                        
-                                                        
-                                                        ShootWeaponEntityComp->  HUDAlphaDecreaseSpeedScale = 1.f;
-                                                    }
-                                                    
-                                                    if(IsNocamerashake) {
-                                                        ShootWeaponEffectComp->CameraShakeInnerRadius = 0.0f;
-                                                        ShootWeaponEffectComp->CameraShakeOuterRadius = 0.0f;
-                                                        ShootWeaponEffectComp->CameraShakFalloff = 0.0f;
-                                                    }
-                                                    
-                                                    if(IsNorecoil){
-                                                        
-                                                        ShootWeaponEntityComp->AccessoriesVRecoilFactor = 0.0f;
-                                                        ShootWeaponEntityComp->AccessoriesHRecoilFactor = 0.0f;
-                                                        ShootWeaponEntityComp->AccessoriesRecoveryFactor = 0.0f;
-                                                        
-                                                        
-                                                        
-                                                        
-                                                    }
-                                                    
-                                                    if(IsNotesst){
-                                                        
-                                                     
-                                                        
-                                                    }
-                                                    
-                                                    
-                                                    
-                                                    if(IsFastshoot){
-                                                        ShootWeaponEntityComp->ShootInterval =0.060606f;
-                                                    }
-                                                    if(IsFastBullet) {
-                                                        ShootWeaponEntityComp->BulletFireSpeed = 80000.f;
-                                                    }
-                                                }
-                                            
-                                        }
-                                    }
-                                }
-                            }
-                            
-                            if (Is3Dbox) {
-                                // if(Distance <120){
-                                bool IsVisible = localPlayerController->LineOfSightTo(Player, { 0, 0, 0 }, true);
-                                FLinearColor visCol(1.f, 1.f, 1.f, 1.f);
-                                if(IsVisible) {
-                                    visCol.R = 0.f;
-                                    visCol.G = 1.f;
-                                    visCol.B = 0.f;
-                                    visCol.A = 1.f;
-                                }else {
-                                    visCol.R = 1.f;
-                                    visCol.G = 0.f;
-                                    visCol.B = 0.f;
-                                    visCol.A = 1.f;
-                                }
-                                
-                                if(Player->bEnsure){
-                                    
-                                    if(IsVisible) {
-                                        
-                                        visCol.R = 1.f;
-                                        visCol.G = 1.f;
-                                        visCol.B = 1.f;
-                                        visCol.A = 1.f;
-                                        
-                                    }else {
-                                        
-                                        visCol.R = 0.33f;
-                                        visCol.G = 0.38f;
-                                        visCol.B = 0.44f;
-                                        visCol.A = 1.00f;
-                                        
-                                        
-                                    }
-                                    
-                                }
-                                
-                                if (Player->Health == 0){
-                                    if(IsVisible) {
-                                        
-                                        visCol.R = 0.98f;
-                                        visCol.G = 0.83f;
-                                        visCol.B = 0.14f;
-                                        visCol.A = 1.00f;
-                                    }else{
-                                        
-                                        visCol.R = 0.83f;
-                                        visCol.G = 0.51f;
-                                        visCol.B = 0.07f;
-                                        visCol.A = 1.00f;
-                                    }
-                                }
-                                
-                                
-                                
-                                
-                                
-                                if (Player->IsInvincible)
-                                {
-                                    visCol.R = 1.f;
-                                    visCol.G = 1.f;
-                                    visCol.B = 0.f;
-                                    visCol.A = 1.f;
-                                }
-                                
-                                
-                                
-                                auto BoxBounds = Player->Mesh->CachedLocalBounds;
-                                FVector Chest = Player->K2_GetActorLocation();
-                                DrawBox3D(Canvas,Player, visCol, Chest, BoxBounds.BoxExtent);
-                                
-                                //                                }
-                            }
-                            /*+++++++++++++++++++++++++++++++++++++++HEALTH ESP+++++++++++++++++++++++++*/
-   
-                          
-                            
-                            
-                            
-                            
-                            
-                            
-                        }PlayerCharacter2.clear();
-                        
-                        {
-                            FVector2D opp;
-                            FVector ii;
-                            if(gGameplayStatics->ProjectWorldToScreen(localPlayerController, ii, false, &opp)){
-                            }else{
-                                
-                                
-                                
-                                if(totalEnemies>0){
-                                    std::wstring fpd ;
-                                    
-                                        fpd=XorEnc(L"Players:");
-                         
-                                    fpd +=std::to_wstring((int)totalEnemies);
-                                    
-                                    Font->LegacyFontSize = 30;
-                                    
-                                    
-                                    DrawTextNotCentered(Canvas, fpd, FVector2D(screenWidth / 2, 150), visCol,COLOR_BLACK);
-                                    Font->LegacyFontSize = 30;
-                                    
-                                }
-                            }
-                        }
-                        
-                    }}}
- 
-            
-           
-            
-           
-            auto MathLibrary = (UKismetMathLibrary *) UKismetMathLibrary::StaticClass();
-            
-          
-            
-            
-        
-            
-          
-            
-            
-            
-            
-        }
-        
-        
-        if (IsGRWAR)
-        {
-            std::vector < ASTExtraGrenadeBase * >GrenadeBase;
-            GetAllActors(GrenadeBase);
-            for (auto actor = GrenadeBase.begin();
-                 actor != GrenadeBase.end(); actor++)
-            {
-                auto Grenade = *actor;
-                if(Grenade) {
-                    if(Grenade->ItemDefineID.TypeSpecificID ==602002)
-                        continue;
-                    if(Grenade->ItemDefineID.TypeSpecificID == 602004);
-                    auto RootComponent = Grenade->RootComponent;
-                    if (RootComponent) {
-                        float gDistance =
-                        Grenade->GetDistanceTo(localPlayer) /100.f;
-                        if (gDistance <= 200.f)
-                        {
-                            Font->LegacyFontSize =
-                            max(6, 15 - (int)(gDistance / 100.f));
-                            
-                            float txtWidth, txtHeight;
-                            std::wstring grenadetext = (L"Here is Grenade");
-                            
-                            auto txtSize = Canvas->K2_TextSize(Font, FString(grenadetext), {1, 1});
-                            
-                            
-                            FVector2D Location;
-                            if (W2S
-                                (RootComponent->RelativeLocation, &Location))
-                            {
-                                
- DrawTextNotCentered(Canvas,FString(grenadetext),FVector2D(Location.X,Location.Y + 34),COLOR_RED,COLOR_BLACK);
-                            }
-                            
-                            Font->LegacyFontSize = 20;
-                            
-                            if (gDistance < 13)
-                            {
-                                std::wstring gwarn;
-                                
-                                
-                                
-                                gwarn = std::wstring(L"MOVE, MOVE, MOVE!");
-                                
-                                
-                                Font->LegacyFontSize = 112;
-                                
-                                
-                                DrawTextNotCentered(Canvas, FString(gwarn),
-                                                    FVector2D(screenWidth / 2,
-                                                              screenHeight / 2),
-                                                    COLOR_RED,COLOR_BLACK);
-                                Font->LegacyFontSize =20
-                                ;
-                            }
-                            
-                            {
-                                FVector bbOrigin =
-                                RootComponent->RelativeLocation;
-                                FVector bbExtends(10, 10, 10);
-                                FVector bbOrigin2;
-                                bbOrigin -= bbExtends / 2;
-                                
-                                
-                                // bottom plane
-                                
-                                FVector one = bbOrigin;
-                                FVector two = bbOrigin;
-                                two.X += bbExtends.X;
-                                FVector three = bbOrigin;
-                                three.X += bbExtends.X;
-                                three.Y += bbExtends.Y;
-                                FVector four = bbOrigin;
-                                four.Y += bbExtends.Y;
-                                FVector five = one;
-                                five.Z += bbExtends.Z;
-                                FVector six = two;
-                                six.Z += bbExtends.Z;
-                                FVector seven = three;
-                                seven.Z += bbExtends.Z;
-                                FVector eight = four;
-                                eight.Z += bbExtends.Z;
-                                
-                                FVector2D s1, s2, s3, s4, s5, s6, s7, s8;
-                                
-                                if (W2S(one, &s1) && W2S(two, &s2)
-                                    && W2S(three, &s3) && W2S(four, &s4)
-                                    && W2S(five, &s5) && W2S(six, &s6)
-                                    && W2S(seven, &s7) && W2S(eight, &s8))
-                                {
-                                    
-                                    
-                                    
-                                    DrawLine(Canvas, s1, s2, 1.3f, COLOR_RED);
-                                    DrawLine(Canvas, s2, s3,1.3f, COLOR_RED);
-                                    DrawLine(Canvas, s3, s4, 1.3f, COLOR_RED);
-                                    DrawLine(Canvas, s4, s1, 1.3f, COLOR_RED);
-                                    
-                                    DrawLine(Canvas, s5, s6, 1.3f, COLOR_RED);
-                                    DrawLine(Canvas, s6, s7, 1.3f, COLOR_RED);
-                                    DrawLine(Canvas, s7, s8,1.3f, COLOR_RED);
-                                    DrawLine(Canvas, s8, s5, 1.3f, COLOR_RED);
-                                    
-                                    DrawLine(Canvas, s1, s5, 1.3f, COLOR_RED);
-                                    DrawLine(Canvas, s2, s6, 1.3f, COLOR_RED);
-                                    DrawLine(Canvas, s3, s7, 1.3f, COLOR_RED);
-                                    DrawLine(Canvas, s4, s8, 1.3f, COLOR_RED);
-                                    
-                                    
-                                    
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                
-                GrenadeBase.clear();
-            }
-        }
-    }
-g_LocalPlayer = localPlayer;
-g_PlayerController = localPlayerController;
 
+    	if(Canvas) {
+
+if (AIMTEXT) {
+    FString displayText = FString("Ace Bypass Loader ");
+
+    Font->LegacyFontSize = 23;
+
+    // Position (same as before)
+    float textX = (float)screenWidth / 1.12f;
+    float textY = 680.0f;
+
+    FLinearColor mainColor  = FLinearColor(1.0f, 0.0f, 0.0f, 1.0f); // Red
+    FLinearColor outlineCol = FLinearColor(0.1f, 0.1f, 0.1f, 1.f); // Dark outline (iOS style)
+
+    if (Canvas && Font) {
+        Canvas->K2_DrawText(
+            Font,
+            displayText,
+            FVector2D(textX, textY),
+            mainColor,
+            -0.8f,                // iOSâstyle kerning
+            FLinearColor(0,0,0,0), // no shadow
+            FVector2D(0, 0),
+            true,                 // bCentreX = true (centres at position)
+            false,                // bCentreY = false
+            true,                 // bOutlined = true
+            outlineCol
+        );
+    }
 }
 
-
+}}
 
 
 
@@ -2423,13 +1944,22 @@ instance = [[self alloc] init];
 return instance;
 }
 
-void *(*oriCheatbot)(UGameViewportClient * GmaeViewPort, SDK::UCanvas* pCanvas);
-void *hookCheatbot(UGameViewportClient * GmaeViewPort, SDK::UCanvas* pCanvas){
-    RenderESP(GmaeViewPort, pCanvas);
-    pCanvas->SizeX = g_screenWidth;
-    pCanvas->SizeY = g_screenHeight;
-    
-    return oriCheatbot(GmaeViewPort, pCanvas);
+void *(*oriCheatbot)(UGameViewportClient* ViewportClient, UCanvas* Canvas);
+void *hookCheatbot(UGameViewportClient* ViewportClient, UCanvas* Canvas){
+    if (!Canvas) 
+        return 0;
+  
+    g_screenWidth  = Canvas->SizeX;
+    g_screenHeight = Canvas->SizeY;
+    static bool loadFont = false;
+    if (!Font || !Font) {
+    if (!loadFont) {std::thread([] { LoadFont(nullptr); }).detach(); loadFont = true;}
+       return 0;
+    }
+    DrawMSG(Canvas);
+    LocalPlayer(Canvas);
+    DrawPlayerESP(Canvas);
+    return oriCheatbot(ViewportClient, Canvas);
 }
 
 void *botcheatxd(){
@@ -2461,7 +1991,6 @@ void *botcheatxd(){
     return 0;
 }
 #define hook botxdxd
-
 
 
 void LoadItemData()
