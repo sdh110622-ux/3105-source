@@ -82,7 +82,7 @@ static bool isHpBarEsp = false;
 static bool isTextEsp = false;
 static bool isShowPropsEarlyWarning = false;
 static bool isBulletTrack = false;
-static bool isLineEsp = false;
+static bool isLineEsp = true;
 static bool isautofire = false;
 static bool killmsj = false;
 static bool isradar = false;
@@ -138,7 +138,7 @@ NSString *resultx;
 @implementation metalbiew
 
 
-#define W2S(w, s) UGameplayStatics::ProjectWorldToScreen(g_LocalController, w, true, s)
+#define W2S(w, s) UGameplayStatics::ProjectWorldToScreen(localPlayerController, w, true, s)
 
 
 
@@ -872,7 +872,7 @@ return s;
 
 template <class T> void GetAllActors(std::vector<T*>& Actors) {
 UGameplayStatics* gGameplayStatics = (UGameplayStatics*)gGameplayStatics->StaticClass();
-   auto GWorld = GetFullWorld();
+	auto GWorld = GetFullWorld();
 if (GWorld) {
 TArray<AActor*> Actors2;
 gGameplayStatics->GetAllActorsOfClass((UObject*)GWorld, T::StaticClass(), &Actors2);
@@ -1811,7 +1811,7 @@ void LocalPlayer(UCanvas* Canvas) {
     ASTExtraPlayerController* localPlayerController = nullptr;
     
     if (!Canvas) return;
-    auto GWorld = GetWorld();
+    auto GWorld = GetFullWorld();
     if (GWorld && GWorld->NetDriver && GWorld->NetDriver->ServerConnection) {
         localPlayerController = reinterpret_cast<ASTExtraPlayerController*>(GWorld->NetDriver->ServerConnection->PlayerController);
         if (localPlayerController && GWorld->PersistentLevel) {
@@ -1871,7 +1871,7 @@ void DrawPlayerESP(UCanvas* Canvas) {
                     
                     bool IsVisible = localPlayerController->LineOfSightTo(Player, {0, 0, 0}, true); 
                     FLinearColor color = Player->bEnsure ? (IsVisible ? FLinearColor(0.f, 1.f, 1.f, 1.f) : FLinearColor(1.f, 0.f, 0.f, 1.f)) : (IsVisible ? FLinearColor(0.f, 1.f, 1.f, 1.f) : FLinearColor(1.f, 0.f, 0.f, 1.f));
-                    if (Head2D.X < 0 || Head2D.Y < 0 || Head2D.X > glWidth || Head2D.Y > glHeight)
+                    if (Head2D.X < 0 || Head2D.Y < 0 || Head2D.X > screenWidth || Head2D.Y > screenHeight)
                         continue;
                     
                     // ð Draw Player Line
@@ -1893,7 +1893,7 @@ void DrawMSG(UCanvas* Canvas) {
 
     	if(Canvas) {
 
-if (AIMTEXT) {
+if (isLineEsp) {
     FString displayText = FString("Ace Bypass Loader ");
 
     Font->LegacyFontSize = 23;
@@ -1949,10 +1949,15 @@ void *hookCheatbot(UGameViewportClient* ViewportClient, UCanvas* Canvas){
   
     g_screenWidth  = Canvas->SizeX;
     g_screenHeight = Canvas->SizeY;
-    static bool loadFont = false;
-    if (!Font || !Font) {
-    if (!loadFont) {std::thread([] { LoadFont(nullptr); }).detach(); loadFont = true;}
-       return 0;
+      static bool loadFont = false;
+        if (!loadFont) {
+            LoadFont();
+            loadFont = true;
+        }
+        
+        if (!Font || !Font )
+            return;
+        {
     }
     DrawMSG(Canvas);
     LocalPlayer(Canvas);
