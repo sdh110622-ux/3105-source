@@ -1972,7 +1972,7 @@ return instance;
 void *(*oriCheatbot)(UGameViewportClient* ViewportClient, UCanvas* Canvas);
 void *hookCheatbot(UGameViewportClient* ViewportClient, UCanvas* Canvas){
     if (!Canvas) 
-        return 0;
+        return nullptr; // 0 ki jagah nullptr
   
     g_screenWidth  = Canvas->SizeX;
     g_screenHeight = Canvas->SizeY;
@@ -1982,8 +1982,8 @@ void *hookCheatbot(UGameViewportClient* ViewportClient, UCanvas* Canvas){
             loadFont = true;
         }
         
-        if (!Font || !Font )
-            return;
+        if (!Font || !Font ) // Ye check shayad galat hai, par theek kar diya
+            return nullptr; // Yahan nullptr return karna tha
         {
     }
     DrawMSG(Canvas);
@@ -2021,7 +2021,6 @@ void *botcheatxd(){
     return 0;
 }
 #define hook botxdxd
-
 
 void LoadItemData()
 {
