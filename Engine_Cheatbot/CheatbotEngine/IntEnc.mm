@@ -52,8 +52,6 @@
 #include "imgui_impl_metal.h"
 #import "FarsiType.h"
 #import "PubgLoad.h"
-
-
 #import "XorStr.hpp"
 
 using namespace SDK;
@@ -140,7 +138,7 @@ NSString *resultx;
 @implementation metalbiew
 
 
-
+#define W2S(w, s) UGameplayStatics::ProjectWorldToScreen(g_LocalController, w, true, s)
 
 
 
@@ -1837,9 +1835,9 @@ void LocalPlayer(UCanvas* Canvas) {
 void DrawPlayerESP(UCanvas* Canvas) {
     int totalEnemies = 0, totalBots = 0;
     
-    if (localPlayer && localController && localPlayer->PartHitComponent && Canvas) { 
+    if (localPlayer && localPlayerController && localPlayer->PartHitComponent && Canvas) { 
         if (localPlayer->PartHitComponent) {
-            auto ConfigCollisionDistSqAngles = g_LocalPlayer->PartHitComponent->ConfigCollisionDistSqAngles;
+            auto ConfigCollisionDistSqAngles = localPlayer->PartHitComponent->ConfigCollisionDistSqAngles;
             for (int j = 0; j < ConfigCollisionDistSqAngles.Num(); j++) {
                 ConfigCollisionDistSqAngles[j].Angle = 60.0f;
             }
@@ -1851,14 +1849,14 @@ void DrawPlayerESP(UCanvas* Canvas) {
         auto GWorld = GetFullWorld();
         
         if (GWorld && GWorld->PersistentLevel) { 
-            auto Actors = GetActors(GWorld->PersistentLevel);
+            auto Actors = GetAllActors(GWorld->PersistentLevel);
             for (int i = 0; i < Actors.Num(); ++i) { 
                 auto Actor = Actors[i];
                 if (!Actor) continue;
                 
                 if (Actor->IsA(ASTExtraPlayerCharacter::StaticClass())) { 
                     auto* Player = static_cast<ASTExtraPlayerCharacter*>(Actor);
-                    if (!Player || Player->PlayerKey == localController->PlayerKey || Player->TeamID == localController->TeamID || Player->bDead || Player->bHidden)
+                    if (!Player || Player->PlayerKey == localPlayerController->PlayerKey || Player->TeamID == localPlayerController->TeamID || Player->bDead || Player->bHidden)
                         continue;
                         
                     float Distance = localPlayer->GetDistanceTo(Player) / 100.f;
@@ -1871,13 +1869,13 @@ void DrawPlayerESP(UCanvas* Canvas) {
                     FVector2D Head2D, Root2D;
                     if (!W2S(HeadPos, &Head2D) || !W2S(RootPos, &Root2D)) continue;
                     
-                    bool IsVisible = localController->LineOfSightTo(Player, {0, 0, 0}, true); 
+                    bool IsVisible = localPlayerController->LineOfSightTo(Player, {0, 0, 0}, true); 
                     FLinearColor color = Player->bEnsure ? (IsVisible ? FLinearColor(0.f, 1.f, 1.f, 1.f) : FLinearColor(1.f, 0.f, 0.f, 1.f)) : (IsVisible ? FLinearColor(0.f, 1.f, 1.f, 1.f) : FLinearColor(1.f, 0.f, 0.f, 1.f));
                     if (Head2D.X < 0 || Head2D.Y < 0 || Head2D.X > glWidth || Head2D.Y > glHeight)
                         continue;
                     
                     // ð Draw Player Line
-                   if (Cheat::Esp::Line) {
+                   if () {
                         FVector2D Start(screenWidth / 2.f, 0.f);
                         FVector2D End(Head2D.X, Head2D.Y/* - 16.f*/);
                         DrawLine(Canvas, Start, End, 0.8f, color); // Thickness updated to 1.8f for cleanness
