@@ -54,7 +54,7 @@
 #import "PubgLoad.h"
 #import "XorStr.hpp"
 
-using namespace SDK;
+using namespace std;
 #define kWidth  [UIScreen mainScreen].bounds.size.width
 #define kHeight [UIScreen mainScreen].bounds.size.height
 
@@ -974,8 +974,8 @@ return true;
 return false;
 }
 struct FLinearColor visCol;
+ASTExtraPlayerController *g_PlayerController;
 ASTExtraPlayerCharacter *g_LocalPlayer;
-SDK::ASTExtraPlayerController *g_PlayerController;
 #define COLOR_BLACK FLinearColor(0, 0, 0, 1.f)
 #define COLOR_WHITE FLinearColor(1.f, 1.f, 1.f, 1.f)
 #define COLOR_RED   FLinearColor(1.f, 0, 0, 1.f)
