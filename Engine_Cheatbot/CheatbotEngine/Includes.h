@@ -23,14 +23,12 @@
 #include <sys/uio.h>
 #include <fcntl.h>
 
-// iOS Logging
-#import <Foundation/Foundation.h>
-
 #define TAG ("@cheatbot_owner")
 
-#define LOGD(...) NSLog(@"[DEBUG] " __VA_ARGS__)
-#define LOGE(...) NSLog(@"[ERROR] " __VA_ARGS__)
-#define LOGI(...) NSLog(@"[INFO] " __VA_ARGS__)
-#define LOGW(...) NSLog(@"[WARN] " __VA_ARGS__)
+// C++ aur Objective-C dono ke liye kaam karega
+#define LOGD(...) printf("[DEBUG] " __VA_ARGS__); printf("\n")
+#define LOGE(...) printf("[ERROR] " __VA_ARGS__); printf("\n")
+#define LOGI(...) printf("[INFO] " __VA_ARGS__); printf("\n")
+#define LOGW(...) printf("[WARN] " __VA_ARGS__); printf("\n")
 
 #endif
