@@ -869,7 +869,34 @@ s += super->GetName();
 }
 return s;
 }
+TArray<AActor *> GetActors(ULevel *PersistentLevel) {
+    if (!PersistentLevel) {
+        return TArray<AActor *>();
+    }
 
+    // iOS Base Address nikalne ke liye
+    uintptr_t moduleBase = (uintptr_t)_dyld_get_image_vmaddr_slide(0);
+    
+    // Tumhara ActorArray Decrypt Function ka Offset
+    uintptr_t actorArrayDecryptOffset = 0x105AA3090; 
+
+    // Function pointer setup
+    auto GetActorsFn = (TArray<AActor*>* (*)(ULevel*))(moduleBase + actorArrayDecryptOffset);
+    
+    if (!GetActorsFn) {
+        return TArray<AActor *>();
+    }
+
+    // Function call karke actors array nikalo
+    TArray<AActor*>* ActorsArrayPtr = GetActorsFn(PersistentLevel);
+    
+    if (!ActorsArrayPtr || ActorsArrayPtr->Num() <= 0) {
+        return {};
+    }
+
+    // Array return karo
+    return *ActorsArrayPtr;
+}
 template <class T> void GetAllActors(std::vector<T*>& Actors) {
 UGameplayStatics* gGameplayStatics = (UGameplayStatics*)gGameplayStatics->StaticClass();
 	auto GWorld = GetFullWorld();
@@ -1605,7 +1632,7 @@ FString s2(check);
 return 0;
 }
 void *LoadFont() {
-while (!Font  ) {
+while (!Font) {
 
 //Font = UObject::FindObject<UFont>(XorEnc("Font TSLFont.TSLFont"));
     Font = UObject::FindObject<UFont>(XorEnc("Font RobotoTiny.RobotoTiny"));
@@ -1830,7 +1857,7 @@ void LocalPlayer(UCanvas* Canvas) {
         }
     }
     g_LocalPlayer = localPlayer;
-    g_LocalController = localPlayerController;
+    g_PlayerController = localPlayerController;
 }
 void DrawPlayerESP(UCanvas* Canvas) {
     int totalEnemies = 0, totalBots = 0;
@@ -1849,7 +1876,7 @@ void DrawPlayerESP(UCanvas* Canvas) {
         auto GWorld = GetFullWorld();
         
         if (GWorld && GWorld->PersistentLevel) { 
-            auto Actors = GetAllActors(GWorld->PersistentLevel);
+            auto Actors = GetActors(GWorld->PersistentLevel);
             for (int i = 0; i < Actors.Num(); ++i) { 
                 auto Actor = Actors[i];
                 if (!Actor) continue;
@@ -1875,7 +1902,7 @@ void DrawPlayerESP(UCanvas* Canvas) {
                         continue;
                     
                     // ð Draw Player Line
-                   if () {
+                   if (isLineEsp) {
                         FVector2D Start(screenWidth / 2.f, 0.f);
                         FVector2D End(Head2D.X, Head2D.Y/* - 16.f*/);
                         DrawLine(Canvas, Start, End, 0.8f, color); // Thickness updated to 1.8f for cleanness
@@ -1969,15 +1996,15 @@ void *botcheatxd(){
     if((Cheatbotlp)){
         static bool botxdxd = false;
         if(!botxdxd){
-            auto CheatBotObj = (SDK::FUObjectArray *) (CHEATBOTOWNER());
+            auto CheatBotObj = (FUObjectArray *) (CHEATBOTOWNER());
             
             auto gobjects = CheatBotObj->ObjObjects;
             
             for (int i = 0; i < gobjects.Num(); i++)
                 if (auto obj = gobjects.GetByIndex(i)) {
                     
-                    if(obj->IsA(SDK::UGameViewportClient::StaticClass())) {
-                        auto View = (SDK::UGameViewportClient *) obj;
+                    if(obj->IsA(UGameViewportClient::StaticClass())) {
+                        auto View = (UGameViewportClient *) obj;
                         
                         auto CheatBotTele = View->VTable;
                         auto vTable = (void**)(CheatBotTele);
