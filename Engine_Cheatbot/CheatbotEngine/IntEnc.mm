@@ -869,34 +869,7 @@ s += super->GetName();
 }
 return s;
 }
-TArray<AActor *> GetActors(ULevel *PersistentLevel) {
-    if (!PersistentLevel) {
-        return TArray<AActor *>();
-    }
 
-    // iOS Base Address nikalne ke liye
-    uintptr_t moduleBase = (uintptr_t)_dyld_get_image_vmaddr_slide(0);
-    
-    // Tumhara ActorArray Decrypt Function ka Offset
-    uintptr_t actorArrayDecryptOffset = 0x105AA3090; 
-
-    // Function pointer setup
-    auto GetActorsFn = (TArray<AActor*>* (*)(ULevel*))(moduleBase + actorArrayDecryptOffset);
-    
-    if (!GetActorsFn) {
-        return TArray<AActor *>();
-    }
-
-    // Function call karke actors array nikalo
-    TArray<AActor*>* ActorsArrayPtr = GetActorsFn(PersistentLevel);
-    
-    if (!ActorsArrayPtr || ActorsArrayPtr->Num() <= 0) {
-        return {};
-    }
-
-    // Array return karo
-    return *ActorsArrayPtr;
-}
 template <class T> void GetAllActors(std::vector<T*>& Actors) {
 UGameplayStatics* gGameplayStatics = (UGameplayStatics*)gGameplayStatics->StaticClass();
 	auto GWorld = GetFullWorld();
@@ -1831,27 +1804,25 @@ float Cheatbotx(float cheatbot1, float cheatbot2) {
     return cheatbotx < -180 ? cheatbotx + 360 : cheatbotx;
 }
 
-
-
 void LocalPlayer(UCanvas* Canvas) {
     ASTExtraPlayerCharacter* localPlayer = nullptr;
     ASTExtraPlayerController* localPlayerController = nullptr;
     
     if (!Canvas) return;
+    
     auto GWorld = GetFullWorld();
     if (GWorld && GWorld->NetDriver && GWorld->NetDriver->ServerConnection) {
         localPlayerController = reinterpret_cast<ASTExtraPlayerController*>(GWorld->NetDriver->ServerConnection->PlayerController);
-        if (localPlayerController && GWorld->PersistentLevel) {
-            auto PlayerActors = GetActors(GWorld->PersistentLevel);
-            for (int i = 0; i < PlayerActors.Num(); ++i) {
-                AActor* Actor = PlayerActors[i];
-                if (!Actor) continue;
-                if (Actor->IsA(ASTExtraPlayerCharacter::StaticClass())) {
-                    auto Player = reinterpret_cast<ASTExtraPlayerCharacter*>(Actor);
-                    if (Player && Player->PlayerKey == localPlayerController->PlayerKey) {
-                        localPlayer = Player;
-                        break;
-                    }
+        
+        if (localPlayerController) {
+            std::vector<ASTExtraPlayerCharacter*> PlayerActors;
+            GetAllActors(PlayerActors);
+            
+            for (auto Player : PlayerActors) {
+                if (!IsValidAddress((kaddr)Player) || !Player->RootComponent) continue;
+                if (Player->PlayerKey == localPlayerController->PlayerKey) {
+                    localPlayer = Player;
+                    break;
                 }
             }
         }
@@ -1859,55 +1830,66 @@ void LocalPlayer(UCanvas* Canvas) {
     g_LocalPlayer = localPlayer;
     g_PlayerController = localPlayerController;
 }
+
+
 void DrawPlayerESP(UCanvas* Canvas) {
     int totalEnemies = 0, totalBots = 0;
     
-    if (localPlayer && localPlayerController && localPlayer->PartHitComponent && Canvas) { 
-        if (localPlayer->PartHitComponent) {
-            auto ConfigCollisionDistSqAngles = localPlayer->PartHitComponent->ConfigCollisionDistSqAngles;
+    if (g_LocalPlayer && g_PlayerController && Canvas) { 
+        
+        if (g_LocalPlayer->PartHitComponent) {
+            auto ConfigCollisionDistSqAngles = g_LocalPlayer->PartHitComponent->ConfigCollisionDistSqAngles;
             for (int j = 0; j < ConfigCollisionDistSqAngles.Num(); j++) {
                 ConfigCollisionDistSqAngles[j].Angle = 60.0f;
             }
-            localPlayer->PartHitComponent->ConfigCollisionDistSqAngles = ConfigCollisionDistSqAngles;
+            g_LocalPlayer->PartHitComponent->ConfigCollisionDistSqAngles = ConfigCollisionDistSqAngles;
         }
         
-        static FName HeadBone = FName("Head");
-        static FName RootBone = FName("Root");
         auto GWorld = GetFullWorld();
         
-        if (GWorld && GWorld->PersistentLevel) { 
-            auto Actors = GetActors(GWorld->PersistentLevel);
-            for (int i = 0; i < Actors.Num(); ++i) { 
-                auto Actor = Actors[i];
-                if (!Actor) continue;
+        if (GWorld) { 
+            std::vector<ASTExtraPlayerCharacter*> Actors;
+            GetAllActors(Actors);
+            
+            for (auto Player : Actors) { 
+                // === CRASH SAFETY CHECK ===
+                if (!IsValidAddress((kaddr)Player) || !Player->RootComponent) continue;
                 
-                if (Actor->IsA(ASTExtraPlayerCharacter::StaticClass())) { 
-                    auto* Player = static_cast<ASTExtraPlayerCharacter*>(Actor);
-                    if (!Player || Player->PlayerKey == localPlayerController->PlayerKey || Player->TeamID == localPlayerController->TeamID || Player->bDead || Player->bHidden)
-                        continue;
-                        
-                    float Distance = localPlayer->GetDistanceTo(Player) / 100.f;
-                    if (Distance > 500.f) continue;
-                    if (Player->bEnsure) ++totalBots;
-                    else ++totalEnemies;
+                if (!Player) continue;
+                if (Player->PlayerKey == g_PlayerController->PlayerKey || Player->TeamID == g_PlayerController->TeamID || Player->bDead || Player->bHidden)
+                    continue;
+                    
+                float Distance = g_LocalPlayer->GetDistanceTo(Player) / 100.f;
+                if (Distance > 500.f) continue;
+                
+                if (Player->bEnsure) ++totalBots;
+                else ++totalEnemies;
 
-                    FVector HeadPos = Player->GetBonePos(HeadBone, {0, 0, 0});
-                    FVector RootPos = Player->GetBonePos(RootBone, {0, 0, 0});
-                    FVector2D Head2D, Root2D;
-                    if (!W2S(HeadPos, &Head2D) || !W2S(RootPos, &Root2D)) continue;
-                    
-                    bool IsVisible = localPlayerController->LineOfSightTo(Player, {0, 0, 0}, true); 
-                    FLinearColor color = Player->bEnsure ? (IsVisible ? FLinearColor(0.f, 1.f, 1.f, 1.f) : FLinearColor(1.f, 0.f, 0.f, 1.f)) : (IsVisible ? FLinearColor(0.f, 1.f, 1.f, 1.f) : FLinearColor(1.f, 0.f, 0.f, 1.f));
-                    if (Head2D.X < 0 || Head2D.Y < 0 || Head2D.X > screenWidth || Head2D.Y > screenHeight)
-                        continue;
-                    
-                    // ð Draw Player Line
-                   if (isLineEsp) {
-                        FVector2D Start(screenWidth / 2.f, 0.f);
-                        FVector2D End(Head2D.X, Head2D.Y/* - 16.f*/);
-                        DrawLine(Canvas, Start, End, 0.8f, color); // Thickness updated to 1.8f for cleanness
-                   }
-                }}}}}
+                FVector HeadPos = Player->GetBonePos("Head", {0, 0, 0});
+                FVector RootPos = Player->GetBonePos("Root", {0, 0, 0});
+                FVector2D Head2D, Root2D;
+                
+                if (!UGameplayStatics::ProjectWorldToScreen(g_PlayerController, HeadPos, true, &Head2D) || 
+                    !UGameplayStatics::ProjectWorldToScreen(g_PlayerController, RootPos, true, &Root2D)) continue;
+                
+                bool IsVisible = g_PlayerController->LineOfSightTo(Player, {0, 0, 0}, true); 
+                FLinearColor color = IsVisible ? FLinearColor(0.f, 1.f, 0.f, 1.f) : FLinearColor(1.f, 0.f, 0.f, 1.f);
+                
+                if (Head2D.X < 0 || Head2D.Y < 0 || Head2D.X > g_screenWidth || Head2D.Y > g_screenHeight)
+                    continue;
+                
+                // Line ESP Draw
+                if (isLineEsp) {
+                    FVector2D Start(g_screenWidth / 2.f, 0.f);
+                    FVector2D End(Head2D.X, Head2D.Y);
+                    DrawLine(Canvas, Start, End, 1.5f, color);
+                }
+                
+                // Yahan Box, Bone, Health ESP ka code daal sakte ho.
+            }
+        }
+    }
+}
 
 void DrawMSG(UCanvas* Canvas) {
     if (!Canvas || !Font) return;
