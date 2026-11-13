@@ -1837,18 +1837,18 @@ void LocalPlayer(UCanvas* Canvas) {
 void DrawPlayerESP(UCanvas* Canvas) {
     int totalEnemies = 0, totalBots = 0;
     
-    if (g_LocalPlayer && g_LocalController && g_LocalPlayer->PartHitComponent && Canvas) { 
-        if (g_LocalPlayer->PartHitComponent) {
+    if (localPlayer && localController && localPlayer->PartHitComponent && Canvas) { 
+        if (localPlayer->PartHitComponent) {
             auto ConfigCollisionDistSqAngles = g_LocalPlayer->PartHitComponent->ConfigCollisionDistSqAngles;
             for (int j = 0; j < ConfigCollisionDistSqAngles.Num(); j++) {
                 ConfigCollisionDistSqAngles[j].Angle = 60.0f;
             }
-            g_LocalPlayer->PartHitComponent->ConfigCollisionDistSqAngles = ConfigCollisionDistSqAngles;
+            localPlayer->PartHitComponent->ConfigCollisionDistSqAngles = ConfigCollisionDistSqAngles;
         }
         
         static FName HeadBone = FName("Head");
         static FName RootBone = FName("Root");
-        auto GWorld = GetWorld();
+        auto GWorld = GetFullWorld();
         
         if (GWorld && GWorld->PersistentLevel) { 
             auto Actors = GetActors(GWorld->PersistentLevel);
@@ -1858,10 +1858,10 @@ void DrawPlayerESP(UCanvas* Canvas) {
                 
                 if (Actor->IsA(ASTExtraPlayerCharacter::StaticClass())) { 
                     auto* Player = static_cast<ASTExtraPlayerCharacter*>(Actor);
-                    if (!Player || Player->PlayerKey == g_LocalController->PlayerKey || Player->TeamID == g_LocalController->TeamID || Player->bDead || Player->bHidden)
+                    if (!Player || Player->PlayerKey == localController->PlayerKey || Player->TeamID == localController->TeamID || Player->bDead || Player->bHidden)
                         continue;
                         
-                    float Distance = g_LocalPlayer->GetDistanceTo(Player) / 100.f;
+                    float Distance = localPlayer->GetDistanceTo(Player) / 100.f;
                     if (Distance > 500.f) continue;
                     if (Player->bEnsure) ++totalBots;
                     else ++totalEnemies;
@@ -1871,14 +1871,14 @@ void DrawPlayerESP(UCanvas* Canvas) {
                     FVector2D Head2D, Root2D;
                     if (!W2S(HeadPos, &Head2D) || !W2S(RootPos, &Root2D)) continue;
                     
-                    bool IsVisible = g_LocalController->LineOfSightTo(Player, {0, 0, 0}, true); 
+                    bool IsVisible = localController->LineOfSightTo(Player, {0, 0, 0}, true); 
                     FLinearColor color = Player->bEnsure ? (IsVisible ? FLinearColor(0.f, 1.f, 1.f, 1.f) : FLinearColor(1.f, 0.f, 0.f, 1.f)) : (IsVisible ? FLinearColor(0.f, 1.f, 1.f, 1.f) : FLinearColor(1.f, 0.f, 0.f, 1.f));
                     if (Head2D.X < 0 || Head2D.Y < 0 || Head2D.X > glWidth || Head2D.Y > glHeight)
                         continue;
                     
                     // ð Draw Player Line
                    if (Cheat::Esp::Line) {
-                        FVector2D Start(glWidth / 2.f, 0.f);
+                        FVector2D Start(screenWidth / 2.f, 0.f);
                         FVector2D End(Head2D.X, Head2D.Y/* - 16.f*/);
                         DrawLine(Canvas, Start, End, 0.8f, color); // Thickness updated to 1.8f for cleanness
                    }
