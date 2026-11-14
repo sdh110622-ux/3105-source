@@ -56,6 +56,16 @@ ASTExtraPlayerCharacter *localPlayer = 0;
 ASTExtraPlayerController *localPlayerController = 0;
 
 // ==========================================
+// ========== CLASS DECLARATION =============
+// ==========================================
+
+@interface metalbiew : UIViewController <MTKViewDelegate>
+@property (nonatomic, strong) IBOutlet MTKView *mtkView;
+@property (nonatomic, strong) id <MTLDevice> device;
+@property (nonatomic, strong) id <MTLCommandQueue> commandQueue;
+@end
+
+// ==========================================
 // ========== HELPERS =======================
 // ==========================================
 
@@ -166,10 +176,10 @@ void DrawPlayerESP(UCanvas* Canvas) {
             DrawLine(Canvas, {g_screenWidth / 2.f, 0.f}, {Head2D.X, Head2D.Y}, 1.5f, color);
         }
 
-        // --- NAME ESP ---
-        if (isTextEsp) {
+        // --- NAME ESP (Fixed Glitch) ---
+        if (isTextEsp && Font) {
             Font->LegacyFontSize = 12;
-            std::string nameStr = Player->bEnsure ? "Bot" : std::string(Player->PlayerName.GetNameString());
+            std::string nameStr = Player->bEnsure ? "Bot" : std::string(Player->PlayerName.ToString().c_str());
             std::wstring wName(nameStr.begin(), nameStr.end());
             FVector2D NamePos = FVector2D(Root2D.X, Root2D.Y + 15.0f);
             FLinearColor nameColor = Player->bEnsure ? FLinearColor(0.0f, 0.75f, 1.0f, 1.0f) : FLinearColor(1.0f, 1.0f, 0.0f, 1.0f);
@@ -177,7 +187,7 @@ void DrawPlayerESP(UCanvas* Canvas) {
         }
 
         // --- DISTANCE ESP ---
-        if (isTextEsp) {
+        if (isTextEsp && Font) {
             Font->LegacyFontSize = 12;
             std::wstring distX = std::to_wstring((int)Distance) + L"m";
             FVector2D DistPos = FVector2D(Root2D.X, Root2D.Y + 30.0f);
@@ -240,7 +250,7 @@ void DrawPlayerESP(UCanvas* Canvas) {
         }
     }
 
-    // --- ENEMY COUNTER (Upar dikhne wala) ---
+    // --- ENEMY COUNTER (Upar wala) ---
     if (Font) {
         std::wstring enemyStr = std::to_wstring(totalEnemies);
         std::wstring botStr   = std::to_wstring(totalBots);
@@ -249,14 +259,11 @@ void DrawPlayerESP(UCanvas* Canvas) {
         float startX = (float)g_screenWidth / 2.0f - boxWidth;
         float startY = (float)g_screenHeight / 14.0f;
 
-        // Red aur Grey box
         DrawFilledRectangle(Canvas, FVector2D(startX, startY), boxWidth, boxHeight, FLinearColor(0.75f, 0.0f, 0.0f, 0.50f));
         DrawFilledRectangle(Canvas, FVector2D(startX + boxWidth, startY), boxWidth, boxHeight, FLinearColor(0.35f, 0.35f, 0.35f, 0.50f));
 
         Font->LegacyFontSize = 15;
-        // Enemy (Red)
         DrawText(Canvas, FString(enemyStr.c_str()), FVector2D(startX + (boxWidth/2.0f), startY + 8.0f), FLinearColor(1,1,1,1), FLinearColor(0,0,0,0));
-        // Bot (Grey)
         DrawText(Canvas, FString(botStr.c_str()), FVector2D(startX + boxWidth + (boxWidth/2.0f), startY + 8.0f), FLinearColor(1,1,1,1), FLinearColor(0,0,0,0));
     }
 }
@@ -326,12 +333,6 @@ void *botcheatxd(){
 // ==========================================
 // ========== IMGUI MENU ====================
 // ==========================================
-
-@interface metalbiew () <MTKViewDelegate>
-@property (nonatomic, strong) IBOutlet MTKView *mtkView;
-@property (nonatomic, strong) id <MTLDevice> device;
-@property (nonatomic, strong) id <MTLCommandQueue> commandQueue;
-@end
 
 @implementation metalbiew
 - (MTKView *)mtkView { return (MTKView *)self.view; }
