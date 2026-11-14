@@ -280,7 +280,7 @@ void DrawLine(UCanvas* Canvas, FVector2D from, FVector2D to, float thickness, FL
 
 void *LoadFont() {
     while (!Font) {
-        Font = UObject::FindObject<UFont>(FString(L"Font RobotoTiny.RobotoTiny"));
+        Font = UObject::FindObject<UFont>(std::string("Font RobotoTiny.RobotoTiny"));
         sleep(1);
     }
     return 0;
