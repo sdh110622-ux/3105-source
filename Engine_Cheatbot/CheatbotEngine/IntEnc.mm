@@ -1848,7 +1848,7 @@ void LocalPlayer(UCanvas* Canvas) {
 void DrawPlayerESP(UCanvas* Canvas) {
     int totalEnemies = 0, totalBots = 0;
     
-    if (g_LocalPlayer && g_PlayerController && Canvas) { 
+    if (g_LocalPlayer && g_PlayerController && Canvas) {
         
         if (g_LocalPlayer->PartHitComponent) {
             auto ConfigCollisionDistSqAngles = g_LocalPlayer->PartHitComponent->ConfigCollisionDistSqAngles;
@@ -1986,7 +1986,7 @@ if (isLineEsp) {
 }
 				
                 // --- ESP NAME ---
-if (isLineEsp) {
+/*if (isLineEsp) {
     Font->LegacyFontSize = 12;
     
     // Player Name (Wide string safe conversion)
@@ -2009,7 +2009,7 @@ if (isLineEsp) {
     if (Font) {
         Canvas->K2_DrawText(Font, playerName, NamePos, nameColor, 1.0f, {}, {}, true, false, true, FLinearColor(0.0f, 0.0f, 0.0f, 1.0f));
     }
-}
+}*/
 // --- ESP DISTANCE ---
 if (isLineEsp) { // Same flag use karo
     Font->LegacyFontSize = 12; 
@@ -2086,8 +2086,7 @@ if (isLineEsp) { // Same flag use karo
 
             Font->LegacyFontSize = OldFontSize;
         }
-    }
-}
+    }}
 
 
 void DrawMSG(UCanvas* Canvas) {
