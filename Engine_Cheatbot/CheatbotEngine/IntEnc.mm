@@ -1306,13 +1306,10 @@ void FixTriangle(float & XPos, float & YPos, int screenDist)
 }
 #define TSL_FONT_DEFAULT_SIZE 20
 static UFont *tslFont = 0, *robotoTinyFont = 0 ;
-void DrawOutlinedText(UCanvas *Canvas, FString Text, FVector2D Pos, FLinearColor Color, FLinearColor OutlineColor, bool isCenter = false) {
 
-
-Canvas->K2_DrawText(tslFont, Text, Pos, Color, 1.f, {}, {}, isCenter, isCenter, true, OutlineColor);
-tslFont->LegacyFontSize = 10;
+void DrawOutlinedText(UCanvas* Canvas, FString Text, FVector2D Pos, FLinearColor Color, FLinearColor OutlineColor, bool isCenter = false) {
+    Canvas->K2_DrawText(Font, Text, Pos, Color, 0.7f, {}, {}, isCenter, isCenter, true, OutlineColor);
 }
-
 void DrawTextNotCentered(UCanvas *Canvas,FString Text, FVector2D Pos, FLinearColor Color,FLinearColor OutlineColor){
     Canvas->K2_DrawText(Font, Text, Pos, Color, 0.4f, {}, {}, true, true, true, OutlineColor);
 }
@@ -1396,7 +1393,19 @@ void DrawFilledRectangle(UCanvas* Canvas, FVector2D Min, float Width, float Heig
         Canvas->K2_DrawLine(Start, End, 1.f, Color);
     }
 }
-
+void DrawTrueTransparentRect(UCanvas* Canvas, FVector2D Position, float Width, float Height, FLinearColor Color) {
+    Canvas->K2_DrawTexture(
+        nullptr,                   
+        Position,                  
+        FVector2D(Width, Height),  
+        FVector2D(0, 0),           
+        FVector2D(1, 1),           
+        Color,                     
+        EBlendMode::BLEND_Translucent, 
+        0.0f,                      
+        FVector2D(0, 0)            
+    );
+}
 
 void RotateTriangle(std::array < FVector2D, 4 > &points, float rotation)
 {
@@ -1884,31 +1893,117 @@ void DrawPlayerESP(UCanvas* Canvas) {
                 
                 // Line ESP Draw
                 if (isLineEsp) {
-                    FVector2D Start(g_screenWidth / 2.f, 0.f);
+				    FVector2D Start(g_screenWidth / 2.f, 0.f);
                     FVector2D End(Head2D.X, Head2D.Y);
                     DrawLine(Canvas, Start, End, 1.5f, color);
                 }
+
+				// --- SKELETON ESP ---
+if (isLineEsp) {
+    // Crash safety check
+    if (!IsValidAddress((kaddr)Player) || !Player->RootComponent) continue;
+
+    FVector Pelvis = Player->GetBonePos("pelvis", {});
+    FVector neck_01 = Player->GetBonePos("neck_01", {});
+    FVector upper_l = Player->GetBonePos("upperarm_l", {});
+    FVector upper_r = Player->GetBonePos("upperarm_r", {});
+    FVector lowerarm_l = Player->GetBonePos("lowerarm_l", {});
+    FVector lowerarm_r = Player->GetBonePos("lowerarm_r", {});
+    FVector hand_l = Player->GetBonePos("hand_l", {});
+    FVector hand_r = Player->GetBonePos("hand_r", {});
+    FVector calf_l = Player->GetBonePos("calf_l", {});
+    FVector calf_r = Player->GetBonePos("calf_r", {});
+    FVector foot_l = Player->GetBonePos("foot_l", {});
+    FVector foot_r = Player->GetBonePos("foot_r", {});
+
+    FVector2D PelvisPos, neck_01Pos, upper_lPos, upper_rPos, lowerarm_lPos, lowerarm_rPos, hand_lPos, hand_rPos, calf_lPos, calf_rPos, foot_lPos, foot_rPos;
+
+    // W2S Check
+    if (!UGameplayStatics::ProjectWorldToScreen(g_PlayerController, Pelvis, false, &PelvisPos) || 
+        !UGameplayStatics::ProjectWorldToScreen(g_PlayerController, neck_01, false, &neck_01Pos) || 
+        !UGameplayStatics::ProjectWorldToScreen(g_PlayerController, upper_l, false, &upper_lPos) || 
+        !UGameplayStatics::ProjectWorldToScreen(g_PlayerController, upper_r, false, &upper_rPos) || 
+        !UGameplayStatics::ProjectWorldToScreen(g_PlayerController, lowerarm_l, false, &lowerarm_lPos) || 
+        !UGameplayStatics::ProjectWorldToScreen(g_PlayerController, lowerarm_r, false, &lowerarm_rPos) || 
+        !UGameplayStatics::ProjectWorldToScreen(g_PlayerController, hand_l, false, &hand_lPos) || 
+        !UGameplayStatics::ProjectWorldToScreen(g_PlayerController, hand_r, false, &hand_rPos) || 
+        !UGameplayStatics::ProjectWorldToScreen(g_PlayerController, calf_l, false, &calf_lPos) || 
+        !UGameplayStatics::ProjectWorldToScreen(g_PlayerController, calf_r, false, &calf_rPos) || 
+        !UGameplayStatics::ProjectWorldToScreen(g_PlayerController, foot_l, false, &foot_lPos) || 
+        !UGameplayStatics::ProjectWorldToScreen(g_PlayerController, foot_r, false, &foot_rPos)) {
+        continue;
+    }
+
+    // Draw Bones
+    Canvas->K2_DrawLine({hand_rPos.X, hand_rPos.Y}, {lowerarm_rPos.X, lowerarm_rPos.Y}, 1.0f, color);
+    Canvas->K2_DrawLine({lowerarm_rPos.X, lowerarm_rPos.Y}, {upper_rPos.X, upper_rPos.Y}, 1.0f, color);
+    Canvas->K2_DrawLine({upper_rPos.X, upper_rPos.Y}, {neck_01Pos.X, neck_01Pos.Y}, 1.0f, color);
+    Canvas->K2_DrawLine({neck_01Pos.X, neck_01Pos.Y}, {upper_lPos.X, upper_lPos.Y}, 1.0f, color);
+    Canvas->K2_DrawLine({upper_lPos.X, upper_lPos.Y}, {lowerarm_lPos.X, lowerarm_lPos.Y}, 1.0f, color);
+    Canvas->K2_DrawLine({lowerarm_lPos.X, lowerarm_lPos.Y}, {hand_lPos.X, hand_lPos.Y}, 1.0f, color);
+    Canvas->K2_DrawLine({foot_rPos.X, foot_rPos.Y}, {calf_rPos.X, calf_rPos.Y}, 1.0f, color);
+    Canvas->K2_DrawLine({calf_rPos.X, calf_rPos.Y}, {PelvisPos.X, PelvisPos.Y}, 1.0f, color);
+    Canvas->K2_DrawLine({PelvisPos.X, PelvisPos.Y}, {calf_lPos.X, calf_lPos.Y}, 1.0f, color);
+    Canvas->K2_DrawLine({calf_lPos.X, calf_lPos.Y}, {foot_lPos.X, foot_lPos.Y}, 1.0f, color);
+    Canvas->K2_DrawLine({PelvisPos.X, PelvisPos.Y}, {neck_01Pos.X, neck_01Pos.Y}, 1.0f, color);
+}
+// --- HEALTH ESP ---
+if (isLineEsp) {
+    // Crash safety check
+    if (!IsValidAddress((kaddr)Player) || !Player->RootComponent) continue;
+
+    float maxHealth = (float)Player->HealthMax;
+    float curHealth = (float)Player->Health;
+    
+    // Agar health max 0 hai, toh divide by zero error se bachne ke liye
+    if (maxHealth <= 0.0f) continue;
+
+    float CurHP = std::max(0.f, std::min(curHealth, maxHealth));
+    
+    FLinearColor ColorHP;
+    if (CurHP / maxHealth > 0.5f) {
+        ColorHP = FLinearColor(0.0f, 1.0f, 0.0f, 1.0f); // Green
+    } else if (CurHP / maxHealth > 0.2f) {
+        ColorHP = FLinearColor(1.0f, 1.0f, 0.0f, 1.0f); // Yellow
+    } else {
+        ColorHP = FLinearColor(1.0f, 0.0f, 0.0f, 1.0f); // Red
+    }
+    
+    float mWidth = 30.0f;
+    float mHeight = 4.0f;
+    
+    // Position (Head ke upar)
+    FVector2D HealthPos = Head2D; 
+    HealthPos.X -= mWidth / 2;
+    HealthPos.Y -= mHeight * 3;
+    
+    // Black Background
+    DrawFilledRectangle(Canvas, {HealthPos.X, HealthPos.Y}, mWidth, mHeight, FLinearColor(0, 0, 0, 1));
+    
+    // Colored Health Bar
+    float healthWidth = (CurHP * mWidth) / maxHealth;
+    DrawFilledRectangle(Canvas, {HealthPos.X, HealthPos.Y}, healthWidth, mHeight, ColorHP);
+}
+				
                 // --- ESP NAME ---
-if (isLineEsp) { // Agar tumhare paas 'isTextEsp' ka flag hai, ya koi bhi naam waala flag
+if (isTextEsp) {
     Font->LegacyFontSize = 12; 
     
-    // Colors
-    FLinearColor MainYellow = FLinearColor(1.0f, 1.0f, 0.0f, 1.0f);   // Real Player
-    FLinearColor MainBlue = FLinearColor(0.0f, 0.75f, 1.0f, 1.0f);    // Bot
-    FLinearColor strokeBlack = FLinearColor(0.0f, 0.0f, 0.0f, 0.18f); // Transparent Outline
-
-    // Player Name (Null check ke saath)
-    FString playerName = Player->bEnsure ? FString("Robot") : Player->PlayerName;
+    // Player Name (Wide string safe conversion)
+    std::wstring wPlayerName;
+    if (Player->bEnsure) {
+        wPlayerName = L"Bot";
+    } else {
+        // PlayerName ko string mein convert karo
+        wPlayerName = std::wstring(Player->PlayerName.c_str()); 
+    }
+    FString playerName(wPlayerName.c_str());
     
-    // Color selection
-    FLinearColor nameColor = Player->bEnsure ? MainBlue : MainYellow;
-    
-    // Position (Head ke thoda neeche)
+    FLinearColor nameColor = Player->bEnsure ? FLinearColor(0.0f, 0.75f, 1.0f, 1.0f) : FLinearColor(1.0f, 1.0f, 0.0f, 1.0f);
     FVector2D NamePos = FVector2D(Root2D.X, Root2D.Y + 15.0f);
 
-    // Draw Text with Outline
     if (Font) {
-        Canvas->K2_DrawText(Font, playerName, NamePos, nameColor, 1.0f, {}, {}, true, false, true, strokeBlack);
+        Canvas->K2_DrawText(Font, playerName, NamePos, nameColor, 1.0f, {}, {}, true, false, true, FLinearColor(0.0f, 0.0f, 0.0f, 1.0f));
     }
 }
 
@@ -1929,56 +2024,67 @@ if (isLineEsp) { // Same flag use karo
         Canvas->K2_DrawText(Font, FString(distX), DistPos, MainWhite, 1.0f, {}, {}, true, false, true, strokeBlack);
     }
 }
-if (isLineEsp) {
-                                float CurHP = std::max(0.f, std::min(Player->Health, Player->HealthMax));
-                                float MaxHP = Player->HealthMax;
-                                float KnockHealth = Player->NearDeathBreath;
-                                float HealthPercentage = CurHP / MaxHP;
 
-                                FLinearColor HPColor;
-                                if (CurHP > 70.0f)
-                                    HPColor = FLinearColor(0.0f, 1.0f, 0.0f, 1.0f);
-                                else if (CurHP > 30.0f)
-                                    HPColor = FLinearColor(1.0f, 1.0f, 0.0f, 1.0f);
-                                else if (CurHP > 0.0f)
-                                    HPColor = FLinearColor(1.0f, 0.0f, 0.0f, 1.0f);
-                                else
-                                {
-                                    HPColor = FLinearColor(0.5f, 0.0f, 0.0f, 1.0f);
-                                    HealthPercentage = KnockHealth / MaxHP;
-                                }
-
-                                FVector HeadPos = Player->GetBonePos("Head", {});
-                                FVector RootPos = Player->GetBonePos("Root", {});
-
-                                FVector2D Head2D, Root2D;
-                                if (W2S(HeadPos, &Head2D) && W2S(RootPos, &Root2D))
-                                {
-                                    float boxHeight = fabsf(Root2D.Y - Head2D.Y);
-                                    float boxWidth = boxHeight * 0.6f;
-                                    float boxLeft = Head2D.X - boxWidth / 2.0f;
-                                    float boxTop = Head2D.Y;
-                                    float extraHeight = boxHeight * 0.1f;
-                                    float BarHeight = boxHeight + extraHeight;
-                                    float BarWidth = 2.3f;
-                                    FVector2D HealthBarPos;
-                                    HealthBarPos.X = boxLeft - BarWidth - 4.0f;
-                                    HealthBarPos.Y = boxTop - extraHeight;
-                                    DrawFilledRect(Canvas, HealthBarPos, BarWidth, BarHeight, FLinearColor(0, 0, 0, 1));
-                                    float FilledHealth = BarHeight * HealthPercentage;
-                                    FVector2D FilledHealthPos = FVector2D(
-                                        HealthBarPos.X,
-                                        HealthBarPos.Y + (BarHeight - FilledHealth)
-                                    );
-                                    DrawFilledRect(Canvas, FilledHealthPos, BarWidth, FilledHealth, HPColor);
-    }}
 // Font reset (Agar zaroorat ho)              // Yahan Box, Bone, Health ESP ka code daal sakte ho.
             }
         }
+
+		  if (isLineEsp) {
+            std::wstring playerStr = std::to_wstring(totalEnemies);
+            std::wstring botStr    = std::to_wstring(totalBots);
+
+            FLinearColor WhiteColor  = FLinearColor(1.f, 1.f, 1.f, 1.f);
+            FLinearColor ShadowColor = FLinearColor(0.f, 0.f, 0.f, 0.75f);
+
+            float boxWidth  = 35.0f;
+            float boxHeight = 34.0f;
+
+            float startX = (float)g_screenWidth / 2.0f - boxWidth;
+            float startY = (float)g_screenHeight / 14.0f;
+
+            FLinearColor bgEnemy = FLinearColor(0.75f, 0.0f, 0.0f, 0.50f); // Grey
+            FLinearColor bgBot   = FLinearColor(0.35f, 0.35f, 0.35f, 0.50f);    // Red
+
+            DrawTrueTransparentRect(Canvas,
+                FVector2D(startX, startY),
+                boxWidth,
+                boxHeight,
+                bgEnemy);
+
+            DrawTrueTransparentRect(Canvas,
+                FVector2D(startX + boxWidth, startY),
+                boxWidth,
+                boxHeight,
+                bgBot);
+
+            float shadowOffset = 1.3f;
+            float textY = startY + (boxHeight / 2.0f) - 7.0f;
+
+            float enemyCenterX = startX + (boxWidth / 2.0f);
+            float botCenterX   = startX + boxWidth + (boxWidth / 2.0f);
+
+            int OldFontSize = Font->LegacyFontSize;
+            Font->LegacyFontSize = 15;
+
+            // White Text
+            DrawOutlinedText(Canvas,
+                FString(botStr),
+                FVector2D(botCenterX, textY + 6.0f),
+                WhiteColor,
+                FLinearColor(0,0,0,0),
+                true);
+
+            DrawOutlinedText(Canvas,
+                FString(playerStr),
+                FVector2D(enemyCenterX, textY + 6.0f),
+                WhiteColor,
+                FLinearColor(0,0,0,0),
+                true);
+
+            Font->LegacyFontSize = OldFontSize;
+        }
     }
 }
-
-
 
 
 void DrawMSG(UCanvas* Canvas) {
@@ -1991,26 +2097,28 @@ void DrawMSG(UCanvas* Canvas) {
     g_screenHeight = screenHeight;
 
     if (Canvas && Font) {
-        // Text setup
-        FString displayText = FString("Bypass Loader");
         
-        // Font size set karo
+        // 1. Text ko safe tareeke se FString mein convert karo
+        std::wstring wText = L"Bypass Loader"; 
+        FString displayText(wText.c_str()); // Ye crash nahi karega aur saaf dikhega
+
+        // 2. Font size set karo
         Font->LegacyFontSize = 18;
 
-        // Position (Screen ke bottom right mein)
-        float textX = (float)screenWidth - 200.0f;
+        // 3. Position (Screen ke bottom right mein)
+        float textX = (float)screenWidth - 220.0f;
         float textY = (float)screenHeight - 100.0f;
 
         FLinearColor mainColor  = FLinearColor(1.0f, 0.0f, 0.0f, 1.0f); // Red text
         FLinearColor outlineCol = FLinearColor(0.0f, 0.0f, 0.0f, 1.0f); // Black outline
 
-        // Draw text with proper scale (1.0f) and outline
+        // 4. Draw Text
         Canvas->K2_DrawText(
             Font,
             displayText,
             FVector2D(textX, textY),
             mainColor,
-            1.0f,                 // Text Scale (1.0f = normal size)
+            1.0f,                 // Scale (1.0f = normal)
             FLinearColor(0,0,0,0), // No shadow
             FVector2D(0, 0),
             true,                 // Center X
