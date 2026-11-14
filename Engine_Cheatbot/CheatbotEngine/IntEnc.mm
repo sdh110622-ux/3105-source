@@ -1897,7 +1897,19 @@ void DrawPlayerESP(UCanvas* Canvas) {
                     FVector2D End(Head2D.X, Head2D.Y);
                     DrawLine(Canvas, Start, End, 1.5f, color);
                 }
+if (isTextEsp) {
+    Font->LegacyFontSize = 12; 
+    
+    // Player Name directly FString se lo
+    FString playerName = Player->bEnsure ? FString(L"Bot") : Player->PlayerName;
+    
+    FLinearColor nameColor = Player->bEnsure ? FLinearColor(0.0f, 0.75f, 1.0f, 1.0f) : FLinearColor(1.0f, 1.0f, 0.0f, 1.0f);
+    FVector2D NamePos = FVector2D(Root2D.X, Root2D.Y + 15.0f);
 
+    if (Font) {
+        Canvas->K2_DrawText(Font, playerName, NamePos, nameColor, 1.0f, {}, {}, true, false, true, FLinearColor(0.0f, 0.0f, 0.0f, 1.0f));
+    }
+}
 				// --- SKELETON ESP ---
 if (isLineEsp) {
     // Crash safety check
@@ -1985,31 +1997,6 @@ if (isLineEsp) {
     DrawFilledRectangle(Canvas, {HealthPos.X, HealthPos.Y}, healthWidth, mHeight, ColorHP);
 }
 				
-                // --- ESP NAME ---
-/*if (isLineEsp) {
-    Font->LegacyFontSize = 12;
-    
-    // Player Name (Wide string safe conversion)
-    std::wstring wPlayerName;
-    if (Player->bEnsure) {
-        wPlayerName = L"Bot";
-    } else {
-        // PlayerName ko string mein convert karo (c_str nahi, Data use karo)
-        if (Player->PlayerName.Data) {
-            wPlayerName = std::wstring(Player->PlayerName.Data); 
-        } else {
-            wPlayerName = L"Player";
-        }
-    }
-    FString playerName(wPlayerName.c_str());
-    
-    FLinearColor nameColor = Player->bEnsure ? FLinearColor(0.0f, 0.75f, 1.0f, 1.0f) : FLinearColor(1.0f, 1.0f, 0.0f, 1.0f);
-    FVector2D NamePos = FVector2D(Root2D.X, Root2D.Y + 15.0f);
-
-    if (Font) {
-        Canvas->K2_DrawText(Font, playerName, NamePos, nameColor, 1.0f, {}, {}, true, false, true, FLinearColor(0.0f, 0.0f, 0.0f, 1.0f));
-    }
-}*/
 // --- ESP DISTANCE ---
 if (isLineEsp) { // Same flag use karo
     Font->LegacyFontSize = 12; 
@@ -2099,39 +2086,24 @@ void DrawMSG(UCanvas* Canvas) {
     g_screenHeight = screenHeight;
 
     if (Canvas && Font) {
+        // Text ko direct FString mein daalo (bina std::wstring ke)
+        FString displayText = FString(L"Bypass Loader"); 
         
-        // 1. Text ko safe tareeke se FString mein convert karo
-        std::wstring wText = L"Bypass Loader"; 
-        FString displayText(wText.c_str()); // Ye crash nahi karega aur saaf dikhega
-
-        // 2. Font size set karo
         Font->LegacyFontSize = 18;
 
-        // 3. Position (Screen ke bottom right mein)
         float textX = (float)screenWidth - 220.0f;
         float textY = (float)screenHeight - 100.0f;
 
-        FLinearColor mainColor  = FLinearColor(1.0f, 0.0f, 0.0f, 1.0f); // Red text
-        FLinearColor outlineCol = FLinearColor(0.0f, 0.0f, 0.0f, 1.0f); // Black outline
+        FLinearColor mainColor  = FLinearColor(1.0f, 0.0f, 0.0f, 1.0f);
+        FLinearColor outlineCol = FLinearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
-        // 4. Draw Text
         Canvas->K2_DrawText(
-            Font,
-            displayText,
-            FVector2D(textX, textY),
-            mainColor,
-            1.0f,                 // Scale (1.0f = normal)
-            FLinearColor(0,0,0,0), // No shadow
-            FVector2D(0, 0),
-            true,                 // Center X
-            false,                // Center Y
-            true,                 // Outline ON
-            outlineCol
+            Font, displayText, FVector2D(textX, textY),
+            mainColor, 1.0f, FLinearColor(0,0,0,0), FVector2D(0, 0),
+            true, false, true, outlineCol
         );
     }
 }
-
-
 static JHCJDrawView *instance = nil;
 
 + (JHCJDrawView *)getInstance
