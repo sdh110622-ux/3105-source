@@ -1897,7 +1897,7 @@ void DrawPlayerESP(UCanvas* Canvas) {
                     FVector2D End(Head2D.X, Head2D.Y);
                     DrawLine(Canvas, Start, End, 1.5f, color);
                 }
-if (isTextEsp) {
+if (isLineEsp) {
     Font->LegacyFontSize = 12; 
     
     // Player Name directly FString se lo
