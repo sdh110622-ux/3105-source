@@ -1986,16 +1986,20 @@ if (isLineEsp) {
 }
 				
                 // --- ESP NAME ---
-if (isTextEsp) {
-    Font->LegacyFontSize = 12; 
+if (isLineEsp) {
+    Font->LegacyFontSize = 12;
     
     // Player Name (Wide string safe conversion)
     std::wstring wPlayerName;
     if (Player->bEnsure) {
         wPlayerName = L"Bot";
     } else {
-        // PlayerName ko string mein convert karo
-        wPlayerName = std::wstring(Player->PlayerName.c_str()); 
+        // PlayerName ko string mein convert karo (c_str nahi, Data use karo)
+        if (Player->PlayerName.Data) {
+            wPlayerName = std::wstring(Player->PlayerName.Data); 
+        } else {
+            wPlayerName = L"Player";
+        }
     }
     FString playerName(wPlayerName.c_str());
     
@@ -2006,7 +2010,6 @@ if (isTextEsp) {
         Canvas->K2_DrawText(Font, playerName, NamePos, nameColor, 1.0f, {}, {}, true, false, true, FLinearColor(0.0f, 0.0f, 0.0f, 1.0f));
     }
 }
-
 // --- ESP DISTANCE ---
 if (isLineEsp) { // Same flag use karo
     Font->LegacyFontSize = 12; 
