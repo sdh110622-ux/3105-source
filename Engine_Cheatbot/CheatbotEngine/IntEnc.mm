@@ -1377,7 +1377,11 @@ void DrawArrows(UCanvas *Canvas,std::array < FVector2D, 39 > Loc, float thicknes
     DrawLine(Canvas,Loc.at(4), Loc.at(3), thickness * 0.5f, FLinearColor(0.f, 0.f, 0.f, 1.f));
     DrawLine(Canvas,Loc.at(3), Loc.at(0), thickness * 0.5f, FLinearColor(0.f, 0.f, 0.f, 1.f));
 }
-
+void DrawFilledRect(UCanvas* Canvas, FVector2D initial_pos, float w, float h, FLinearColor Color)
+{
+    for (float i = 0.f; i < h; i += 1.f)
+    Canvas->K2_DrawLine(FVector2D(initial_pos.X, initial_pos.Y + i), FVector2D(initial_pos.X + w, initial_pos.Y + i), 1.f, Color);
+}    
 void DrawFilledRectangle(UCanvas* Canvas, FVector2D Min, float Width, float Height, FLinearColor Color)
 {
     // Ensure the coordinates are sorted correctly (Min should be top-left)
@@ -1884,59 +1888,138 @@ void DrawPlayerESP(UCanvas* Canvas) {
                     FVector2D End(Head2D.X, Head2D.Y);
                     DrawLine(Canvas, Start, End, 1.5f, color);
                 }
-                
-                // Yahan Box, Bone, Health ESP ka code daal sakte ho.
+                // --- ESP NAME ---
+if (isLineEsp) { // Agar tumhare paas 'isTextEsp' ka flag hai, ya koi bhi naam waala flag
+    Font->LegacyFontSize = 12; 
+    
+    // Colors
+    FLinearColor MainYellow = FLinearColor(1.0f, 1.0f, 0.0f, 1.0f);   // Real Player
+    FLinearColor MainBlue = FLinearColor(0.0f, 0.75f, 1.0f, 1.0f);    // Bot
+    FLinearColor strokeBlack = FLinearColor(0.0f, 0.0f, 0.0f, 0.18f); // Transparent Outline
+
+    // Player Name (Null check ke saath)
+    FString playerName = Player->bEnsure ? FString("Robot") : Player->PlayerName;
+    
+    // Color selection
+    FLinearColor nameColor = Player->bEnsure ? MainBlue : MainYellow;
+    
+    // Position (Head ke thoda neeche)
+    FVector2D NamePos = FVector2D(Root2D.X, Root2D.Y + 15.0f);
+
+    // Draw Text with Outline
+    if (Font) {
+        Canvas->K2_DrawText(Font, playerName, NamePos, nameColor, 1.0f, {}, {}, true, false, true, strokeBlack);
+    }
+}
+
+// --- ESP DISTANCE ---
+if (isLineEsp) { // Same flag use karo
+    Font->LegacyFontSize = 12; 
+    FLinearColor MainWhite = FLinearColor(1.0f, 1.0f, 1.0f, 1.0f);    
+    FLinearColor strokeBlack = FLinearColor(0.0f, 0.0f, 0.0f, 0.18f); 
+
+    // Convert distance to string properly (iOS safe)
+    std::wstring distX = std::to_wstring((int)Distance) + L"m";
+    
+    // Position (Name ke thoda neeche)
+    FVector2D DistPos = FVector2D(Root2D.X, Root2D.Y + 30.0f);
+
+    // Draw Text with Outline
+    if (Font) {
+        Canvas->K2_DrawText(Font, FString(distX), DistPos, MainWhite, 1.0f, {}, {}, true, false, true, strokeBlack);
+    }
+}
+if (isLineEsp) {
+                                float CurHP = std::max(0.f, std::min(Player->Health, Player->HealthMax));
+                                float MaxHP = Player->HealthMax;
+                                float KnockHealth = Player->NearDeathBreath;
+                                float HealthPercentage = CurHP / MaxHP;
+
+                                FLinearColor HPColor;
+                                if (CurHP > 70.0f)
+                                    HPColor = FLinearColor(0.0f, 1.0f, 0.0f, 1.0f);
+                                else if (CurHP > 30.0f)
+                                    HPColor = FLinearColor(1.0f, 1.0f, 0.0f, 1.0f);
+                                else if (CurHP > 0.0f)
+                                    HPColor = FLinearColor(1.0f, 0.0f, 0.0f, 1.0f);
+                                else
+                                {
+                                    HPColor = FLinearColor(0.5f, 0.0f, 0.0f, 1.0f);
+                                    HealthPercentage = KnockHealth / MaxHP;
+                                }
+
+                                FVector HeadPos = Player->GetBonePos("Head", {});
+                                FVector RootPos = Player->GetBonePos("Root", {});
+
+                                FVector2D Head2D, Root2D;
+                                if (W2S(HeadPos, &Head2D) && W2S(RootPos, &Root2D))
+                                {
+                                    float boxHeight = fabsf(Root2D.Y - Head2D.Y);
+                                    float boxWidth = boxHeight * 0.6f;
+                                    float boxLeft = Head2D.X - boxWidth / 2.0f;
+                                    float boxTop = Head2D.Y;
+                                    float extraHeight = boxHeight * 0.1f;
+                                    float BarHeight = boxHeight + extraHeight;
+                                    float BarWidth = 2.3f;
+                                    FVector2D HealthBarPos;
+                                    HealthBarPos.X = boxLeft - BarWidth - 4.0f;
+                                    HealthBarPos.Y = boxTop - extraHeight;
+                                    DrawFilledRect(Canvas, HealthBarPos, BarWidth, BarHeight, FLinearColor(0, 0, 0, 1));
+                                    float FilledHealth = BarHeight * HealthPercentage;
+                                    FVector2D FilledHealthPos = FVector2D(
+                                        HealthBarPos.X,
+                                        HealthBarPos.Y + (BarHeight - FilledHealth)
+                                    );
+                                    DrawFilledRect(Canvas, FilledHealthPos, BarWidth, FilledHealth, HPColor);
+    }}
+// Font reset (Agar zaroorat ho)              // Yahan Box, Bone, Health ESP ka code daal sakte ho.
             }
         }
     }
 }
 
+
+
+
 void DrawMSG(UCanvas* Canvas) {
     if (!Canvas || !Font) return;
-	   
-	auto screenWidth = Canvas->SizeX;
+       
+    auto screenWidth = Canvas->SizeX;
     auto screenHeight = Canvas->SizeY;
     
     g_screenWidth = screenWidth;
     g_screenHeight = screenHeight;
 
-    	if(Canvas) {
-
-if (isLineEsp) {
-    FString displayText = FString("Ace Bypass Loader ");
-
-    Font->LegacyFontSize = 23;
-
-    // Position (same as before)
-    float textX = (float)screenWidth / 1.12f;
-    float textY = 680.0f;
-
-    FLinearColor mainColor  = FLinearColor(1.0f, 0.0f, 0.0f, 1.0f); // Red
-    FLinearColor outlineCol = FLinearColor(0.1f, 0.1f, 0.1f, 1.f); // Dark outline (iOS style)
-
     if (Canvas && Font) {
+        // Text setup
+        FString displayText = FString("Bypass Loader");
+        
+        // Font size set karo
+        Font->LegacyFontSize = 18;
+
+        // Position (Screen ke bottom right mein)
+        float textX = (float)screenWidth - 200.0f;
+        float textY = (float)screenHeight - 100.0f;
+
+        FLinearColor mainColor  = FLinearColor(1.0f, 0.0f, 0.0f, 1.0f); // Red text
+        FLinearColor outlineCol = FLinearColor(0.0f, 0.0f, 0.0f, 1.0f); // Black outline
+
+        // Draw text with proper scale (1.0f) and outline
         Canvas->K2_DrawText(
             Font,
             displayText,
             FVector2D(textX, textY),
             mainColor,
-            -0.8f,                // iOSâstyle kerning
-            FLinearColor(0,0,0,0), // no shadow
+            1.0f,                 // Text Scale (1.0f = normal size)
+            FLinearColor(0,0,0,0), // No shadow
             FVector2D(0, 0),
-            true,                 // bCentreX = true (centres at position)
-            false,                // bCentreY = false
-            true,                 // bOutlined = true
+            true,                 // Center X
+            false,                // Center Y
+            true,                 // Outline ON
             outlineCol
         );
     }
 }
-
-}}
-
-
-
-
-
 
 
 static JHCJDrawView *instance = nil;
